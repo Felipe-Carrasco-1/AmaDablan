@@ -1,0 +1,42 @@
+<!-- shared/components/admin-layout/admin-layout.component.html -->
+<div class="admin-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+        <path d="M20 4 L36 32 L4 32 Z" stroke="#c8923a" stroke-width="2" fill="none"/>
+      </svg>
+      <span>Admin Panel</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item">
+        <span class="icon">📊</span> Dashboard
+      </a>
+      <a routerLink="/admin/productos" routerLinkActive="active" class="nav-item">
+        <span class="icon">☕</span> Productos
+      </a>
+      <a routerLink="/admin/categorias" routerLinkActive="active" class="nav-item">
+        <span class="icon">🗂️</span> Categorías
+      </a>
+      <a routerLink="/admin/inventario" routerLinkActive="active" class="nav-item">
+        <span class="icon">📦</span> Inventario
+      </a>
+      <a routerLink="/admin/reportes" routerLinkActive="active" class="nav-item">
+        <span class="icon">📋</span> Reportes
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <span class="user-icon">👤</span>
+        <span class="user-email">{{ userEmail }}</span>
+      </div>
+      <button class="btn-salir" (click)="logout()">🚪 Salir</button>
+      <a routerLink="/" class="btn-tienda">🏠 Ver Tienda</a>
+    </div>
+  </aside>
+
+  <main class="admin-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

@@ -1,0 +1,121 @@
+<!-- pages/admin/reportes/reportes.html -->
+<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h2>Reportes</h2>
+      <p class="text-muted">Genera y descarga reportes del sistema</p>
+    </div>
+  </div>
+
+  <!-- Generar reporte -->
+  <div class="card mb-3">
+    <h3 class="card-title">Generar nuevo reporte</h3>
+    <div class="report-actions">
+      <button class="report-btn" *ngFor="let t of tipos" (click)="generar(t.value)" [disabled]="loading">
+        <span class="report-icon">{{ t.icon }}</span>
+        <span>{{ t.label }}</span>
+      </button>
+    </div>
+    <div class="alert alert-success mt-2" *ngIf="successMsg">{{ successMsg }}</div>
+  </div>
+
+  <!-- Historial de reportes -->
+  <div class="card table-wrap">
+    <h3 class="card-title">Historial de reportes</h3>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Tipo</th>
+          <th>Fecha</th>
+          <th>Generado por</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let r of reportes">
+          <td>
+            <span class="badge badge-gold">{{ r.tipo }}</span>
+          </td>
+
+          <!-- ✅ Fecha formateada -->
+          <td>{{ r.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+
+          <td>{{ r.generado_por_email }}</td>
+
+          <td>
+            <div class="action-btns">
+              <button class="btn btn-sm btn-secondary" (click)="verDetalle(r)">
+                👁 Ver
+              </button>
+              <button class="btn btn-sm btn-danger" (click)="DeleteReporte(r.id)">
+                🗑 Eliminar
+              </button>
+            </div>
+          </td>
+        </tr>
+
+        <tr *ngIf="reportes.length === 0">
+          <td colspan="4" class="text-center text-muted" style="padding:32px">
+            No hay reportes generados aún
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal detalle -->
+<div class="modal-overlay" *ngIf="reporteSeleccionado" (click)="reporteSeleccionado = null">
+  <div class="modal-box modal-lg" (click)="$event.stopPropagation()">
+
+    <div class="modal-header">
+      <h3>
+        Reporte: {{ reporteSeleccionado.tipo | titlecase }}
+        — {{ reporteSeleccionado.fecha | date:'dd/MM/yyyy HH:mm' }}
+      </h3>
+      <button class="modal-close" (click)="reporteSeleccionado = null">×</button>
+    </div>
+
+    <!-- Tabla de datos -->
+    <div class="table-wrap" *ngIf="reporteSeleccionado.datos?.items?.length">
+      <table>
+        <thead>
+          <tr>
+            <th *ngFor="let col of getColumns(reporteSeleccionado.datos.items[0])">
+              {{ col | titlecase }}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of reporteSeleccionado.datos.items">
+            <td *ngFor="let col of getColumns(row)">
+              <!-- ✅ precio con formato $0.00 -->
+              <ng-container *ngIf="col === 'precio'">
+              ${{ row[col] | number:'1.0-0' }}
+              </ng-container>
+              <!-- ✅ booleanos legibles -->
+              <ng-container *ngIf="col === 'destacado' || col === 'estado'">
+                <span class="badge" [class.badge-success]="row[col]" [class.badge-danger]="!row[col]">
+                  {{ row[col] ? 'Sí' : 'No' }}
+                </span>
+              </ng-container>
+              <!-- resto de columnas -->
+              <ng-container *ngIf="col !== 'precio' && col !== 'destacado' && col !== 'estado'">
+                {{ row[col] }}
+              </ng-container>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="text-muted text-center"
+       *ngIf="!reporteSeleccionado.datos?.items?.length"
+       style="padding:20px">
+      Sin datos
+    </p>
+
+  </div>
+</div>

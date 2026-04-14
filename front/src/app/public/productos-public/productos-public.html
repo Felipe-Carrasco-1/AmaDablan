@@ -1,0 +1,37 @@
+<!-- ── BOTÓN VOLVER ── -->
+<div class="barra-volver">
+  <a routerLink="/" class="btn-volver">← Volver al inicio</a>
+</div>
+
+<section class="catalogo">
+  <h2>Catálogo de Productos</h2>
+
+  <!-- Cargando -->
+  <div *ngIf="loading" class="loading">
+    <span>☕ Cargando productos...</span>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error && !loading" class="error-msg">
+    {{ error }}
+  </div>
+
+  <!-- Grid solo cuando ya cargó -->
+  <div class="grid" *ngIf="!loading && !error">
+
+    <div *ngIf="productos.length === 0" class="empty">
+      No hay productos disponibles.
+    </div>
+
+    <div class="card" *ngFor="let p of productos">
+      <img [src]="p.imagen_url || 'assets/no-image.png'" [alt]="p.nombre" />
+      <h3>{{ p.nombre }}</h3>
+      <p class="desc">{{ p.descripcion }}</p>
+      <div class="footer">
+        <span class="price">${{ p.precio | number:'1.0-0' }}</span>
+        <span class="stock">Stock: {{ p.stock }}</span>
+      </div>
+    </div>
+
+  </div>
+</section>

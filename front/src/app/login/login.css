@@ -1,0 +1,109 @@
+/* pages/auth/login/login.component.scss */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Fondo más limpio y moderno */
+  background: linear-gradient(135deg, #f8f6f3 0%, #efe7dd 100%);
+  padding: 24px;
+}
+
+/* CARD */
+.login-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
+  padding: 42px 38px;
+  width: 100%;
+  max-width: 420px;
+
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(10px);
+}
+
+/* BRAND */
+.login-brand {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.login-brand h1 {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  color: #1f1f1f;
+  margin-bottom: 6px;
+}
+
+.login-brand h1 span {
+  color: #c8923a; /* oro café elegante */
+}
+
+.login-brand p {
+  color: #6b6b6b;
+  font-size: 0.9rem;
+}
+
+/* INPUTS (IMPORTANTE) */
+input {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+
+  border: 1px solid #e2e2e2;
+  border-radius: 10px;
+
+  font-size: 0.95rem;
+  outline: none;
+
+  transition: all 0.2s ease;
+  background: #fafafa;
+}
+
+input:focus {
+  border-color: #c8923a;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(200, 146, 58, 0.15);
+}
+
+/* BOTÓN */
+button {
+  width: 100%;
+  padding: 12px 14px;
+
+  background: linear-gradient(135deg, #c8923a, #b07a2d);
+  color: white;
+
+  border: none;
+  border-radius: 10px;
+
+  font-weight: 600;
+  font-size: 0.95rem;
+
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 25px rgba(200, 146, 58, 0.25);
+}
+
+/* LINKS */
+.login-back {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 0.85rem;
+}
+
+.login-back a {
+  color: #6b6b6b;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.login-back a:hover {
+  color: #c8923a;
+}

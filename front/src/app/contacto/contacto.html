@@ -1,0 +1,166 @@
+<!-- ── TOP BAR ── -->
+<div class="top-bar">
+  <span>📞 9-98732625</span>
+</div>
+
+<!-- ── NAVBAR ── -->
+<nav class="navbar">
+  <div class="navbar-logo" routerLink="/" style="cursor:pointer">
+    <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+      <path d="M20 4 L36 32 L4 32 Z" stroke="#c8923a" stroke-width="2" fill="none"/>
+      <path d="M14 24 L26 24" stroke="#c8923a" stroke-width="1.5"/>
+    </svg>
+    <div class="logo-text">
+      <span class="logo-name">Ama Dablam</span>
+      <span class="logo-sub">Coffee</span>
+    </div>
+  </div>
+
+  <ul class="nav-links">
+    <li><a routerLink="/">Inicio</a></li>
+    <li><a routerLink="/productos">Productos</a></li>
+    <li><a routerLink="/contacto" class="active">Contacto</a></li>
+  </ul>
+
+  <div class="nav-actions">
+    <button class="btn-login" routerLink="/login" *ngIf="!isLoggedIn">
+      👤 Iniciar Sesión
+    </button>
+    <a class="btn-login btn-admin" routerLink="/admin/dashboard" *ngIf="isLoggedIn && isAdmin">
+      🔐 Panel Admin
+    </a>
+    <span class="btn-login btn-user" *ngIf="isLoggedIn && !isAdmin">
+      👤 {{ auth.currentUser?.email }}
+    </span>
+  </div>
+</nav>
+
+<!-- ── HERO CONTACTO ── -->
+<div class="contacto-hero">
+  <h1>Contáctanos</h1>
+  <p>Estamos aquí para ayudarte. Escríbenos y te responderemos a la brevedad.</p>
+</div>
+
+<!-- ── CONTENIDO ── -->
+<div class="contacto-wrapper">
+
+  <!-- FORMULARIO -->
+  <div class="contacto-form-card">
+    <h2>Envíanos un mensaje</h2>
+
+    <div class="alert-success" *ngIf="enviado">
+      ✅ ¡Mensaje enviado! Te contactaremos pronto.
+    </div>
+
+    <form (ngSubmit)="enviar()" *ngIf="!enviado">
+      <div class="form-group">
+        <label>Nombre completo</label>
+        <input
+          class="form-control"
+          type="text"
+          [(ngModel)]="form.nombre"
+          name="nombre"
+          placeholder="Tu nombre"
+          required />
+      </div>
+
+      <div class="form-group">
+        <label>Correo electrónico</label>
+        <input
+          class="form-control"
+          type="email"
+          [(ngModel)]="form.email"
+          name="email"
+          placeholder="tu@email.com"
+          required />
+      </div>
+
+      <div class="form-group">
+        <label>Mensaje</label>
+        <textarea
+          class="form-control"
+          [(ngModel)]="form.mensaje"
+          name="mensaje"
+          rows="5"
+          placeholder="¿En qué podemos ayudarte?"
+          required>
+        </textarea>
+      </div>
+
+      <button type="submit" class="btn-enviar" [disabled]="loading">
+        {{ loading ? 'Enviando...' : '✉️ Enviar mensaje' }}
+      </button>
+    </form>
+  </div>
+
+  <!-- INFO CONTACTO -->
+  <div class="contacto-info">
+    <h2>Información de contacto</h2>
+
+    <div class="info-item">
+      <span class="info-icon">📞</span>
+      <div>
+        <strong>Teléfono</strong>
+        <p>9-98732652</p>
+      </div>
+    </div>
+
+    <div class="info-item">
+      <span class="info-icon">✉️</span>
+      <div>
+        <strong>Email</strong>
+        <p>info&#64;amadablamcoffee.cl</p>
+      </div>
+    </div>
+
+    <div class="info-item">
+      <span class="info-icon">📍</span>
+      <div>
+        <strong>Dirección principal</strong>
+        <p>Catedral de Linares, Maule</p>
+      </div>
+    </div>
+
+    <div class="info-item">
+      <span class="info-icon">🕐</span>
+      <div>
+        <strong>Horario</strong>
+        <p>Lunes a Viernes: 9:00 - 18:00</p>
+        <p>Sábado: 10:00 - 14:00</p>
+      </div>
+    </div>
+
+    <div class="social-section">
+      <h3>Síguenos</h3>
+      <div class="social-icons">
+        <a href="#" aria-label="Instagram">📷 Instagram</a>
+        <a href="#" aria-label="Facebook">📘 Facebook</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── FOOTER ── -->
+<footer class="footer">
+  <div class="footer-col">
+    <h4>Enlaces Útiles</h4>
+    <ul>
+      <li><a routerLink="/">Inicio</a></li>
+      <li><a routerLink="/productos">Productos</a></li>
+    </ul>
+  </div>
+  <div class="footer-col">
+    <h4>Contacto</h4>
+    <p>📞 9-98732652</p>
+    <p>✉️ info&#64;amadablamcoffee.cl</p>
+    <p>📍 Catedral de Linares</p>
+  </div>
+  <div class="footer-col">
+    <h4>Síguenos</h4>
+    <div class="social-icons">
+      <a href="#" aria-label="Instagram">📷</a>
+      <a href="#" aria-label="Facebook">📘</a>
+    </div>
+  </div>
+</footer>

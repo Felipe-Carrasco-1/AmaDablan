@@ -1,0 +1,147 @@
+<!-- pages/admin/productos/productos.component.html -->
+<div class="admin-page">
+  <div class="page-header">
+    <div>
+      <h2>Gestión de Productos</h2>
+      <p class="text-muted">{{ productos.length }} productos registrados</p>
+    </div>
+    <button class="btn btn-primary" (click)="openModal()">+ Nuevo Producto</button>
+  </div>
+
+  <!-- Filtros -->
+  <div class="filters card mb-2">
+    <input class="form-control" style="max-width:260px" type="text" placeholder="🔍 Buscar producto..."
+           [(ngModel)]="search" (input)="filtrar()" />
+    <select class="form-control" style="max-width:180px" [(ngModel)]="filtroCategoria" (change)="filtrar()">
+      <option value="">Todas las categorías</option>
+      <option *ngFor="let c of categorias" [value]="c.id">{{ c.nombre }}</option>
+    </select>
+    <select class="form-control" style="max-width:160px" [(ngModel)]="filtroEstado" (change)="filtrar()">
+      <option value="">Todos los estados</option>
+      <option value="true">Activos</option>
+      <option value="false">Inactivos</option>
+    </select>
+  </div>
+
+  <!-- Tabla -->
+  <div class="card table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Categoría</th>
+          <th>Precio</th>
+          <th>Stock</th>
+          <th>Destacado</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let p of productosFiltrados">
+          <td>
+            <div class="producto-cell">
+              <img *ngIf="p.imagen_url" [src]="p.imagen_url" [alt]="p.nombre" class="producto-thumb" />
+              <div class="producto-placeholder" *ngIf="!p.imagen_url">☕</div>
+              <div>
+                <strong>{{ p.nombre }}</strong>
+                <span class="badge badge-danger ms-1" *ngIf="p.alerta_stock">⚠ Stock bajo</span>
+              </div>
+            </div>
+          </td>
+          <td>{{ p.categoria_nombre }}</td>
+          <td>${{ p.precio | number:'1.0-0' }}</td>
+          <td>
+            <span [class.text-danger]="p.alerta_stock" [class.text-gold]="!p.alerta_stock">{{ p.stock }}</span>
+          </td>
+          <td>
+            <button class="btn-toggle" (click)="toggleDestacado(p)" [title]="p.destacado ? 'Quitar destacado' : 'Marcar destacado'">
+              {{ p.destacado ? '⭐' : '☆' }}
+            </button>
+          </td>
+          <td>
+            <span class="badge" [class.badge-success]="p.estado" [class.badge-danger]="!p.estado">
+              {{ p.estado ? 'Activo' : 'Inactivo' }}
+            </span>
+          </td>
+          <td>
+            <div class="action-btns">
+              <button class="btn btn-sm btn-secondary" (click)="openModal(p)">✏️</button>
+              <button class="btn btn-sm btn-danger" (click)="eliminar(p)">🗑️</button>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="productosFiltrados.length === 0">
+          <td colspan="7" class="text-center text-muted" style="padding:32px">No se encontraron productos</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-box modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ editando ? 'Editar Producto' : 'Nuevo Producto' }}</h3>
+      <button class="modal-close" (click)="closeModal()">×</button>
+    </div>
+
+    <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+    <div class="alert alert-success" *ngIf="successMsg">{{ successMsg }}</div>
+
+    <form (ngSubmit)="guardar()">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre *</label>
+          <input class="form-control" type="text" [(ngModel)]="form.nombre" name="nombre" required />
+        </div>
+        <div class="form-group">
+          <label>Precio *</label>
+          <input class="form-control" type="number" [(ngModel)]="form.precio" name="precio" min="0" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Stock *</label>
+          <input class="form-control" type="number" [(ngModel)]="form.stock" name="stock" min="0" required />
+        </div>
+        <div class="form-group">
+          <label>Stock mínimo</label>
+          <input class="form-control" type="number" [(ngModel)]="form.stock_minimo" name="stock_minimo" min="0" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Categoría *</label>
+        <select class="form-control" [(ngModel)]="form.categoria" name="categoria" required>
+          <option value="">Seleccionar categoría</option>
+          <option *ngFor="let c of categorias" [value]="c.id">{{ c.nombre }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Descripción</label>
+        <textarea class="form-control" [(ngModel)]="form.descripcion" name="descripcion" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Imagen</label>
+        <input class="form-control" type="file" accept="image/*" (change)="onFileChange($event)" />
+      </div>
+      <div class="form-row">
+        <div class="form-check">
+          <input type="checkbox" id="estado" [(ngModel)]="form.estado" name="estado" />
+          <label for="estado">Activo</label>
+        </div>
+        <div class="form-check">
+          <input type="checkbox" id="destacado" [(ngModel)]="form.destacado" name="destacado" />
+          <label for="destacado">Destacado</label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="loading">
+          {{ loading ? 'Guardando...' : (editando ? 'Actualizar' : 'Crear Producto') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

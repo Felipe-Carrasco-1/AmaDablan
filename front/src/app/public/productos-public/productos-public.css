@@ -1,0 +1,109 @@
+.catalogo {
+  padding: 40px;
+  text-align: center;
+}
+
+h2 {
+  font-size: 2rem;
+  margin-bottom: 30px;
+}
+
+/* GRID RESPONSIVE */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+/* CARD */
+.card {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.15);
+}
+
+/* IMAGEN */
+.card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* 🔥 NOMBRE PRODUCTO */
+.card h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e293b; /* oscuro */
+  margin: 10px 0 4px;
+}
+
+/* DESCRIPCIÓN */
+.desc {
+  font-size: 0.9rem;
+  color: #64748b; /* mejor gris */
+  margin: 6px 0 10px;
+}
+
+/* FOOTER (PRECIO + STOCK) */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  font-weight: 600;
+}
+
+/* PRECIO */
+.price {
+  color: #c8923a;
+  font-size: 1.05rem;
+}
+
+/* 🔥 STOCK (ARREGLADO) */
+.stock {
+  font-size: 0.85rem;
+  color: #374151; /* antes no se veía */
+}
+
+/* 💡 BONUS: colores dinámicos */
+.stock.low {
+  color: #dc2626; /* rojo */
+}
+
+.stock.medium {
+  color: #d97706; /* naranja */
+}
+
+.stock.high {
+  color: #16a34a; /* verde */
+}
+
+.barra-volver {
+  background: #1a0f08;
+  padding: 12px 24px;
+  border-bottom: 1px solid rgba(200,146,58,0.15);
+}
+
+.btn-volver {
+  color: #d4a55a;
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-family: 'Lato', sans-serif;
+  transition: color 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-volver:hover {
+  color: #f0e6d6;
+}

@@ -1,0 +1,133 @@
+<!-- home.component.html -->
+<div class="page-wrapper">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <span class="phone-icon">📞</span>
+    <span>9-98732625</span>
+  </div>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="navbar-logo">
+      <img src="assets/images/logo.png" alt="Ama Dablam Coffee" class="logo-img" />
+    </div>
+    <ul class="nav-links">
+      <li><a routerLink="/" class="active">Inicio</a></li>
+      <li><a routerLink="/productos">Productos</a></li>
+      <li><a routerLink="/contacto">Contacto</a></li>
+    </ul>
+    <button class="btn-login" routerLink="/login">
+      👤 Iniciar Sesión
+    </button>
+  </nav>
+
+  <!-- HERO SLIDER -->
+  <section class="hero">
+    <div class="hero-slide active">
+      <img src="assets/images/hero-bg.jpg" alt="Hero" class="hero-bg" />
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <img src="assets/images/logo-white.png" alt="Ama Dablam Coffee" class="hero-logo" />
+        <h1>Tostamos tu próximo café</h1>
+        <button class="btn-hero" routerLink="/productos">Ver Productos</button>
+      </div>
+    </div>
+    <button class="slider-prev" (click)="prevSlide()">&#8249;</button>
+    <button class="slider-next" (click)="nextSlide()">&#8250;</button>
+    <div class="slider-dots">
+      <span class="dot active"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+      <span class="dot"></span>
+    </div>
+  </section>
+
+  <!-- CATEGORÍAS -->
+  <section class="categories">
+    <div class="category-card" *ngFor="let cat of categories" (click)="filterByCategory(cat.slug)">
+      <img [src]="cat.image" [alt]="cat.name" />
+      <p>{{ cat.name }}</p>
+    </div>
+  </section>
+
+  <!-- PRODUCTOS DESTACADOS -->
+  <section class="featured">
+    <div class="featured-bg"></div>
+    <h2>Productos Destacados</h2>
+    <div class="products-grid">
+      <div class="product-card" *ngFor="let product of featuredProducts">
+        <div class="product-img-wrap">
+          <img [src]="product.image" [alt]="product.name" />
+        </div>
+        <div class="product-info">
+          <h3>{{ product.name }}</h3>
+          <p class="price">${{ product.price | number }}</p>
+          <button class="btn-cart" (click)="addToCart(product)">Agregar al Carrito</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAPA Y UBICACIONES -->
+  <section class="location-section">
+    <div class="location-info">
+      <h3>📍 Ama Dablam</h3>
+      <p class="subtitle">Marañan de Carrlee</p>
+      <p class="phone">📞 Llámanos: 9-98732652</p>
+      <div class="branches">
+        <div class="branch" *ngFor="let branch of branches">
+          <span class="branch-icon">📍</span>
+          <div>
+            <strong>{{ branch.name }}</strong>
+            <span class="branch-distance">{{ branch.distance }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="map-container">
+      <iframe
+        [src]="mapUrl"
+        width="100%"
+        height="100%"
+        style="border:0;"
+        allowfullscreen=""
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade">
+      </iframe>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-col">
+      <h4>Enlaces Útiles</h4>
+      <ul>
+        <li><a routerLink="/">Inicio</a></li>
+        <li><a routerLink="/productos">Productos</a></li>
+        <li><a routerLink="/mayoristas">Mayoristas</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Contacto</h4>
+      <p>📞 9-98732652</p>
+      <p>✉️ info@amadablamcoffee.cl</p>
+      <p>📍 Catedral de Linares</p>
+    </div>
+    <div class="footer-col">
+      <h4>Síguenos</h4>
+      <div class="social-icons">
+        <a href="#" target="_blank" aria-label="Instagram">
+          <img src="assets/icons/instagram.svg" alt="Instagram" />
+        </a>
+        <a href="#" target="_blank" aria-label="Facebook">
+          <img src="assets/icons/facebook.svg" alt="Facebook" />
+        </a>
+        <a href="mailto:info@amadablamcoffee.cl" aria-label="Email">
+          <img src="assets/icons/email.svg" alt="Email" />
+        </a>
+      </div>
+    </div>
+  </footer>
+
+</div>
