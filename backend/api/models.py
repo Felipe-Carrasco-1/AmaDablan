@@ -1,5 +1,5 @@
 """
-api/models.py — Ama Dablam Coffee (CORREGIDO)
+api/models.py — Ama Dablam Coffee (FINAL PRO)
 """
 
 from django.db import models
@@ -109,29 +109,34 @@ class Producto(models.Model):
     def __str__(self):
         return self.nombre
 
-def verificar_stock_minimo(self):
-    try:
-        inventario = self.inventario
+    # 🔥 MÉTODO CENTRALIZADO
+    def verificar_stock_minimo(self):
+        try:
+            inventario = self.inventario
 
-        if self.stock <= inventario.stock_minimo:
+            if self.stock <= inventario.stock_minimo:
 
-            existe = AlertaStock.objects.filter(
-                producto=self,
-                leida=False
-            ).exists()
-
-        if not existe:
-            AlertaStock.objects.create(
+                existe = AlertaStock.objects.filter(
                     producto=self,
-                    mensaje=f'Stock bajo en {self.nombre}: {self.stock} unidades (mínimo: {inventario.stock_minimo})'
-                )
+                    leida=False
+                ).exists()
 
-            return True
+                if not existe:
+                    AlertaStock.objects.create(
+                        producto=self,
+                        mensaje=f'Stock bajo en {self.nombre}: {self.stock} unidades (mínimo: {inventario.stock_minimo})'
+                    )
+                return True
 
-    except Inventario.DoesNotExist:
-        pass
+        except Inventario.DoesNotExist:
+            pass
 
-    return False
+        return False
+
+    # 🔥 OPCIONAL PRO (AUTO)
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.verificar_stock_minimo()
 
 
 # ─────────────────────────────────────────────
@@ -153,29 +158,16 @@ class Inventario(models.Model):
         if cantidad == 0:
             return
 
-        # SUMAR O RESTAR
         nuevo_stock = self.producto.stock + cantidad
 
-        # Evitar negativos
         if nuevo_stock < 0:
             nuevo_stock = 0
 
         self.producto.stock = nuevo_stock
         self.producto.save()
 
-        # ALERTA
-        if self.producto.stock <= self.stock_minimo:
-
-            existe = AlertaStock.objects.filter(
-                producto=self.producto,
-                leida=False
-            ).exists()
-
-            if not existe:
-                AlertaStock.objects.create(
-                    producto=self.producto,
-                    mensaje=f'Stock bajo en {self.producto.nombre}: {self.producto.stock} unidades (mínimo: {self.stock_minimo})'
-                )
+        # 🔥 SOLO LLAMA AL MÉTODO CENTRAL
+        self.producto.verificar_stock_minimo()
 
 
 # ─────────────────────────────────────────────

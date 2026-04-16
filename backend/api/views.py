@@ -3,7 +3,7 @@ from django.core.mail import send_mail
 
 from rest_framework import viewsets
 from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -76,7 +76,7 @@ class CategoriaViewSet(viewsets.ModelViewSet):
 
 
 # =========================
-# PRODUCTOS (🔥 FIX FILTROS)
+# PRODUCTOS
 # =========================
 class ProductoViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
@@ -103,13 +103,12 @@ class ProductoViewSet(viewsets.ModelViewSet):
             return ProductoCreateSerializer
         return ProductoSerializer
 
-    # 🔥 STOCK (SUMA Y RESTA)
     @action(detail=True, methods=['patch'])
     def actualizar_stock(self, request, pk=None):
         producto = self.get_object()
         cantidad = int(request.data.get('cantidad', 0))
 
-        producto.stock = producto.stock + cantidad
+        producto.stock += cantidad
 
         if producto.stock < 0:
             producto.stock = 0
@@ -123,7 +122,7 @@ class ProductoViewSet(viewsets.ModelViewSet):
 
 
 # =========================
-# INVENTARIO
+# INVENTARIO (🔥 FIX ALERTAS REALES)
 # =========================
 class InventarioViewSet(viewsets.ModelViewSet):
     queryset = Inventario.objects.select_related('producto')
@@ -132,17 +131,19 @@ class InventarioViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def alertas_activas(self, request):
-        data = []
 
-        for inv in self.get_queryset():
-            if inv.producto.stock <= inv.stock_minimo:
-                data.append({
-                    "id": inv.id,
-                    "producto": inv.producto.nombre,
-                    "stock": inv.producto.stock,
-                    "stock_minimo": inv.stock_minimo,
-                    "leida": False
-                })
+        alertas = AlertaStock.objects.filter(leida=False)
+
+        data = [
+            {
+                "id": a.id,
+                "producto": a.producto.nombre,
+                "stock": a.producto.stock,
+                "stock_minimo": a.producto.inventario.stock_minimo,
+                "leida": a.leida
+            }
+            for a in alertas
+        ]
 
         return Response(data)
 
@@ -162,31 +163,45 @@ class AlertaStockViewSet(viewsets.ModelViewSet):
         alerta.save()
         return Response({'leida': True})
 
+    @action(detail=False, methods=['patch'])
+    def marcar_todas_leidas(self, request):
+        total = AlertaStock.objects.filter(leida=False).update(leida=True)
+
+        return Response({
+            'mensaje': 'Todas las alertas marcadas como leídas',
+            'total_actualizadas': total
+        })
+
 
 # =========================
-# REPORTES + DASHBOARD
+# REPORTES (🔥 FIX DASHBOARD REAL)
 # =========================
 class ReporteViewSet(viewsets.ModelViewSet):
     queryset = Reporte.objects.all().order_by('-id')
     serializer_class = ReporteSerializer
     permission_classes = [IsAdminUser]
 
-    # 🔥 DASHBOARD
     @action(detail=False, methods=['get'])
     def dashboard(self, request):
 
-        alertas = 0
+        inventarios = Inventario.objects.select_related('producto')
 
-        for inv in Inventario.objects.select_related('producto'):
-            if inv.producto.stock <= inv.stock_minimo:
-                alertas += 1
+        productos_bajo_stock = [
+            {
+                "nombre": inv.producto.nombre,
+                "stock": inv.producto.stock,
+                "minimo": inv.stock_minimo
+            }
+            for inv in inventarios
+            if inv.producto.stock <= inv.stock_minimo
+        ]
 
         return Response({
             "total_productos": Producto.objects.count(),
             "total_categorias": Categoria.objects.count(),
             "total_usuarios": Usuario.objects.count(),
 
-            "alertas_no_leidas": alertas,
+            "alertas_no_leidas": len(productos_bajo_stock),
 
             "productos_sin_stock": Producto.objects.filter(stock=0).count(),
 
@@ -195,13 +210,10 @@ class ReporteViewSet(viewsets.ModelViewSet):
                 .values('nombre', 'total')
             ),
 
-            "productos_bajo_stock": list(
-                Producto.objects.filter(stock__lte=5)
-                .values('nombre', 'stock')
-            )
+            # 🔥 FIX REAL AQUÍ
+            "productos_bajo_stock": productos_bajo_stock
         })
 
-    # 🔥 REPORTES (FIX STOCK + DECIMAL)
     @action(detail=False, methods=['post'])
     def generar(self, request):
 
@@ -212,7 +224,6 @@ class ReporteViewSet(viewsets.ModelViewSet):
 
         datos = {}
 
-        # PRODUCTOS
         if tipo == 'productos':
             datos['items'] = [
                 {
@@ -223,14 +234,12 @@ class ReporteViewSet(viewsets.ModelViewSet):
                 for p in Producto.objects.values('nombre', 'precio', 'stock')
             ]
 
-        # CATEGORIAS
         elif tipo == 'categorias':
             datos['items'] = list(
                 Categoria.objects.annotate(total=Count('productos'))
                 .values('nombre', 'total')
             )
 
-        # STOCK / INVENTARIO
         elif tipo in ['stock', 'inventario']:
             datos['items'] = [
                 {

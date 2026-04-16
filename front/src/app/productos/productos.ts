@@ -26,114 +26,165 @@ export class AdminProductos implements OnInit {
   error           = '';
   successMsg      = '';
   selectedFile: File | null = null;
+
   form: any = this.emptyForm();
 
   constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.cargar();
+
     this.api.getCategorias().subscribe((data: any) => {
       this.categorias = data;
-      this.cdr.detectChanges(); // ✅
+      this.cdr.detectChanges();
     });
   }
 
   cargar(): void {
     this.api.getProductos().subscribe((data: any) => {
-      this.productos          = data;
+      this.productos = data;
       this.productosFiltrados = data;
-      this.cdr.detectChanges(); // ✅
+      this.cdr.detectChanges();
     });
   }
 
   emptyForm() {
-    return { nombre: '', precio: 0, stock: 0, stock_minimo: 10, categoria: '', descripcion: '', estado: true, destacado: false };
+    return {
+      nombre: '',
+      precio: '',
+      stock: 0,
+      stock_minimo: 10,
+      categoria: null,
+      descripcion: '',
+      estado: true,
+      destacado: false
+    };
   }
 
   openModal(p?: any) {
-    this.editando  = !!p;
-    this.form      = p ? { ...p } : this.emptyForm();
+    this.editando = !!p;
+
+    this.form = p
+      ? {
+          ...p,
+          categoria: p.categoria?.id ?? p.categoria,
+          precio: p.precio?.toString() // 🔥 evitar problemas con decimal
+        }
+      : this.emptyForm();
+
     this.showModal = true;
-    this.cdr.detectChanges(); // ✅
+    this.cdr.detectChanges();
   }
 
   closeModal() {
     this.showModal = false;
-    this.cdr.detectChanges(); // ✅
+    this.cdr.detectChanges();
   }
 
   guardar() {
-  this.loading = true;
-  this.error = ''; // Limpiar errores previos
-  
-  const fd = new FormData();
+    this.loading = true;
+    this.error = '';
 
-  // 1. Enviamos los campos de texto uno por uno
-  // Evitamos enviar objetos complejos o URLs de imágenes viejas
-  fd.append('nombre', this.form.nombre);
-  fd.append('precio', this.form.precio.toString());
-  fd.append('stock', this.form.stock.toString());
-  fd.append('stock_minimo', this.form.stock_minimo.toString());
-  fd.append('categoria', this.form.categoria);
-  fd.append('descripcion', this.form.descripcion || '');
-  fd.append('estado', this.form.estado ? 'true' : 'false');
-  fd.append('destacado', this.form.destacado ? 'true' : 'false');
+    const fd = new FormData();
 
-  // 2. LA CLAVE: Solo anexar la imagen si es un ARCHIVO nuevo
-  if (this.selectedFile) {
-    fd.append('imagen', this.selectedFile);
+    // 🔥 LIMPIAR PRECIO (FIX CLAVE)
+    let precioRaw = this.form.precio?.toString() || '0';
+
+    // eliminar comas (ej: 2,500 → 2500)
+    precioRaw = precioRaw.replace(/,/g, '').trim();
+
+    const precio = Number(precioRaw);
+
+    if (isNaN(precio) || precio <= 0) {
+      this.error = 'Precio inválido';
+      this.loading = false;
+      return;
+    }
+
+    // ✅ Campos
+    fd.append('nombre', this.form.nombre);
+    fd.append('precio', precio.toString());
+    fd.append('stock', String(Number(this.form.stock)));
+    fd.append('stock_minimo', String(this.form.stock_minimo ?? 10));
+
+    // ✅ categoría
+    const categoriaId =
+      typeof this.form.categoria === 'object'
+        ? this.form.categoria.id
+        : this.form.categoria;
+
+    fd.append('categoria', String(Number(categoriaId)));
+
+    fd.append('descripcion', this.form.descripcion || '');
+    fd.append('estado', this.form.estado ? 'true' : 'false');
+    fd.append('destacado', this.form.destacado ? 'true' : 'false');
+
+    // ✅ imagen
+    if (this.selectedFile) {
+      fd.append('imagen', this.selectedFile);
+    }
+
+    // 🧪 DEBUG
+    console.log('--- DATA QUE SE ENVÍA ---');
+    for (let pair of fd.entries()) {
+      console.log(pair[0], pair[1]);
+    }
+
+    const req = this.editando
+      ? this.api.updateProducto(this.form.id, fd)
+      : this.api.createProducto(fd);
+
+    req.subscribe({
+      next: () => {
+        this.loading = false;
+        this.successMsg = this.editando
+          ? 'Producto actualizado'
+          : 'Producto creado';
+
+        this.selectedFile = null;
+        this.closeModal();
+        this.cargar();
+
+        setTimeout(() => {
+          this.successMsg = '';
+          this.cdr.detectChanges();
+        }, 2500);
+      },
+      error: (err) => {
+        this.loading = false;
+        console.error('ERROR BACKEND:', err);
+
+        if (err.error) {
+          this.error = Object.values(err.error).flat().join(' ');
+        } else {
+          this.error = 'Error al guardar el producto.';
+        }
+
+        this.cdr.detectChanges();
+      }
+    });
   }
 
-  // 3. Decidir si es UPDATE o CREATE
-  const req = this.editando
-    ? this.api.updateProducto(this.form.id, fd) // Asegúrate que use .patch() internamente
-    : this.api.createProducto(fd);
+  filtrar() {
+    this.productosFiltrados = this.productos.filter(p => {
 
-  req.subscribe({
-    next: () => {
-      this.loading = false;
-      this.successMsg = this.editando ? 'Producto actualizado' : 'Producto creado';
-      this.selectedFile = null; // Resetear archivo
-      this.closeModal();
-      this.cargar();
-      setTimeout(() => { 
-        this.successMsg = ''; 
-        this.cdr.detectChanges(); 
-      }, 2500);
-    },
-    error: (err) => {
-      this.loading = false;
-      // Mostrar un mensaje más amigable que el JSON crudo
-      this.error = err.error?.imagen ? 'El archivo de imagen no es válido.' : 'Error al guardar el producto.';
-      console.error(err);
-      this.cdr.detectChanges();
-    }
-  });
-}
+      const coincideBusqueda =
+        !this.search ||
+        p.nombre?.toLowerCase().includes(this.search.toLowerCase());
 
-filtrar() {
-  this.productosFiltrados = this.productos.filter(p => {
+      const coincideCategoria =
+        !this.filtroCategoria ||
+        p.categoria == this.filtroCategoria;
 
-    // 🔍 BUSCADOR
-    const coincideBusqueda =
-      !this.search ||
-      p.nombre?.toLowerCase().includes(this.search.toLowerCase());
+      const coincideEstado =
+        this.filtroEstado === '' ||
+        p.estado.toString() === this.filtroEstado;
 
-    // 📦 CATEGORÍA (usa ID)
-    const coincideCategoria =
-      !this.filtroCategoria ||
-      p.categoria == this.filtroCategoria;
+      return coincideBusqueda && coincideCategoria && coincideEstado;
+    });
 
-    // ✅ ESTADO (true / false como string)
-    const coincideEstado =
-      this.filtroEstado === '' ||
-      p.estado.toString() === this.filtroEstado;
-
-    return coincideBusqueda && coincideCategoria && coincideEstado;
-  });
-
-  this.cdr.detectChanges();
-}
+    this.cdr.detectChanges();
+  }
 
   onFileChange(event: any) {
     this.selectedFile = event.target.files[0];

@@ -8,7 +8,7 @@ export class ApiService {
 
   private baseUrl = 'http://localhost:8000/api';
 
-  // 🔥 CACHE DASHBOARD (EVITA 2-3 REQUESTS)
+  // 🔥 CACHE DASHBOARD
   private dashboardCache$?: Observable<Dashboard>;
 
   constructor(private http: HttpClient) {}
@@ -54,8 +54,9 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/productos/`, data);
   }
 
+  // 🔥 FIX IMPORTANTE → PATCH EN VEZ DE PUT
   updateProducto(id: number, data: FormData) {
-    return this.http.put(`${this.baseUrl}/productos/${id}/`, data);
+    return this.http.patch(`${this.baseUrl}/productos/${id}/`, data);
   }
 
   deleteProducto(id: number) {
@@ -100,22 +101,22 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/reportes/generar/`, { tipo });
   }
 
+  DeleteReporte(id: number) {
+    return this.http.delete(`${this.baseUrl}/reportes/${id}/`);
+  }
+
   // =========================
-  // 🔥 DASHBOARD (FIX REAL)
+  // DASHBOARD
   // =========================
   getDashboard(): Observable<Dashboard> {
 
     if (!this.dashboardCache$) {
       this.dashboardCache$ = this.http
         .get<Dashboard>(`${this.baseUrl}/reportes/dashboard/`)
-        .pipe(shareReplay(1)); // 🔥 evita múltiples llamadas
+        .pipe(shareReplay(1)); // 🔥 cachea la respuesta
     }
 
     return this.dashboardCache$;
-  }
-
-  DeleteReporte(id: number) {
-    return this.http.delete(`${this.baseUrl}/reportes/${id}/`);
   }
 }
 
