@@ -1,10 +1,11 @@
 // home.ts
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewEncapsulation } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewEncapsulation, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { AuthService } from '../../core/services/auth.service';
+import { CartService } from '../../core/services/cart.service';
 
 @Component({
   standalone: true,
@@ -18,6 +19,13 @@ export class Home implements OnInit, OnDestroy {
 
   currentSlide = 0;
   private sliderInterval: any;
+  isScrolled = false;
+
+  @HostListener('window:scroll', [])
+  onWindowScroll() {
+    this.isScrolled = window.scrollY > 50;
+    this.cdr.detectChanges();
+  }
 
 slides = [
   { titulo: 'Tostamos tu próximo café',      bg: 'assets/images/hero1.jpg' },
@@ -48,15 +56,29 @@ getIcon(nombre: string): string {
 
   if (key.includes('café')) return '☕';
   if (key.includes('congel')) return '🍦';
+  if (key.includes('sandwich') || key.includes('sándwich')) return '🥪';
+  if (key.includes('snack') || key.includes('picoteo')) return '🥐';
+  if (key.includes('bebida') || key.includes('jugo')) return '🥤';
+  if (key.includes('pasteler') || key.includes('torta') || key.includes('dulce')) return '🍰';
 
   return '📦';
+}
+
+getProductoIcon(nombre: string): string {
+  const key = nombre.toLowerCase();
+  if (key.includes('sandwich') || key.includes('sándwich')) return '🥪';
+  if (key.includes('snack') || key.includes('picoteo') || key.includes('papa')) return '🥐';
+  if (key.includes('bebida') || key.includes('jugo') || key.includes('bebida')) return '🥤';
+  if (key.includes('pasteler') || key.includes('torta') || key.includes('dulce') || key.includes('muffin') || key.includes('snack')) return '🍰';
+  return '☕';
 }
 
   constructor(
     private http: HttpClient,
     private sanitizer: DomSanitizer,
     private cdr: ChangeDetectorRef,
-    public auth: AuthService
+    public auth: AuthService,
+    public cartService: CartService
   ) {
     this.mapUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
       'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3275.9831520733716!2d-71.59824492394283!3d-35.84665337240633!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x9669237e3a9b4e4b%3A0x32f7b02b9a5c2e4d!2sLinares%2C%20Maule!5e0!3m2!1ses!2scl!4v1'
@@ -110,5 +132,13 @@ toggleMenu(): void {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     });
+  }
+
+  addToCart(producto: any) {
+    this.cartService.addToCart(producto, 1);
+    // Abrimos el carrito para confirmar que se añadió
+    if (!this.cartService.isCartOpen()) {
+      this.cartService.toggleCart();
+    }
   }
 }

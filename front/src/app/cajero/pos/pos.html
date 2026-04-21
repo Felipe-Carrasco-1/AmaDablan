@@ -1,0 +1,86 @@
+<div class="pos-container">
+  
+  <!-- 🗂️ CATEGORÍAS Y PRODUCTOS -->
+  <div class="pos-main">
+    <div class="pos-categories">
+      <button 
+        class="cat-btn" 
+        [class.active]="categoriaSeleccionada === 'todos'" 
+        (click)="categoriaSeleccionada = 'todos'">
+        📂 Todos
+      </button>
+      <button 
+        class="cat-btn" 
+        *ngFor="let cat of categorias" 
+        [class.active]="categoriaSeleccionada == cat.id"
+        (click)="categoriaSeleccionada = cat.id">
+        {{ cat.nombre }}
+      </button>
+    </div>
+
+    <div class="pos-grid">
+      <div 
+        class="pos-card" 
+        *ngFor="let p of productosFiltrados" 
+        (click)="agregarAlCarrito(p)">
+        <div class="pos-card-icon">{{ getIcon(p.nombre) }}</div>
+        <div class="pos-card-info">
+          <span class="pos-card-name">{{ p.nombre }}</span>
+          <span class="pos-card-price">${{ p.precio | number:'1.0-0' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🛒 PANEL DE CARRITO Y PAGO -->
+  <div class="pos-sidebar">
+    <div class="sidebar-header">
+      <h3>🛒 Venta Actual</h3>
+      <button class="btn-clear" (click)="carrito = []; total = 0" *ngIf="carrito.length > 0">Vaciar</button>
+    </div>
+
+    <div class="sidebar-items">
+      <div *ngIf="carrito.length === 0" class="empty-cart">
+        <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">☕</span>
+        <p>Selecciona productos <br> para iniciar la venta</p>
+      </div>
+
+      <div class="cart-item" *ngFor="let item of carrito">
+        <div class="item-info">
+          <strong>{{ item.nombre }}</strong>
+          <span>${{ item.precio | number:'1.0-0' }}</span>
+        </div>
+        <div class="item-controls">
+          <button (click)="cambiarCantidad(item.id, -1)">-</button>
+          <span>{{ item.cantidad }}</span>
+          <button (click)="cambiarCantidad(item.id, 1)">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-footer" *ngIf="carrito.length > 0">
+      <div class="total-row">
+        <span>TOTAL</span>
+        <span>${{ total | number:'1.0-0' }}</span>
+      </div>
+
+      <div class="payment-methods">
+        <label class="pay-option">
+          <input type="radio" name="pago" [(ngModel)]="metodoPago" value="efectivo">
+          <span class="pay-box">💵 Efectivo</span>
+        </label>
+        <label class="pay-option">
+          <input type="radio" name="pago" [(ngModel)]="metodoPago" value="transferencia">
+          <span class="pay-box">💳 Transf.</span>
+        </label>
+      </div>
+
+      <button 
+        class="btn-finalize" 
+        [disabled]="procesando"
+        (click)="finalizarVenta()">
+        {{ procesando ? '⏳ PROCESANDO...' : '✅ FINALIZAR E IMPRIMIR' }}
+      </button>
+    </div>
+  </div>
+</div>

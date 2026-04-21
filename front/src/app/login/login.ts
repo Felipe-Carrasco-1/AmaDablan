@@ -31,24 +31,27 @@ export class LoginComponent {
   }
 }
 
-onSubmit(): void {
-  this.error = '';
-  this.loading = true;
+  onSubmit(): void {
+    this.error = '';
+    this.loading = true;
 
-  this.auth.login(this.email, this.password).subscribe({
-    next: (res: any) => {
-      this.loading = false;
+    this.auth.login(this.email, this.password).subscribe({
+      next: (res: any) => {
+        this.loading = false;
+        const role = res.user?.rol || res.rol;
 
-      const role = res.user?.rol || res.rol;
-
-      this.router.navigate([
-        role === 'admin' ? '/admin/dashboard' : '/'
-      ]);
-    },
-    error: () => {
-      this.loading = false;
-      this.error = 'Credenciales incorrectas. Verifica tu email y contraseña.';
-    }
-  });
-}
+        if (role === 'admin') {
+          this.router.navigate(['/admin/dashboard']);
+        } else if (role === 'cajero') {
+          this.router.navigate(['/pos']);
+        } else {
+          this.router.navigate(['/']);
+        }
+      },
+      error: () => {
+        this.loading = false;
+        this.error = 'Credenciales incorrectas. Verifica tu email y contraseña.';
+      }
+    });
+  }
 }

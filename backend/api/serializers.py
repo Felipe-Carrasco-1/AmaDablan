@@ -3,7 +3,7 @@ tienda/serializers.py — Ama Dablam Coffee
 """
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from .models import Usuario, Categoria, Producto, Inventario, Reporte, AlertaStock
+from .models import Usuario, Categoria, Producto, Inventario, Reporte, AlertaStock, Pedido, DetallePedido
 
 
 # ─────────────────────────────────────────────────────────
@@ -162,3 +162,64 @@ class ReporteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Reporte
         fields = ['id', 'tipo', 'fecha', 'generado_por_email', 'datos']
+
+
+# ─────────────────────────────────────────────────────────
+# PEDIDOS (CARRITO)
+# ─────────────────────────────────────────────────────────
+class DetallePedidoSerializer(serializers.ModelSerializer):
+    producto_nombre = serializers.CharField(source='producto.nombre', read_only=True)
+
+    class Meta:
+        model = DetallePedido
+        fields = ['id', 'producto', 'producto_nombre', 'cantidad', 'precio_unitario']
+
+
+class PedidoSerializer(serializers.ModelSerializer):
+    detalles = DetallePedidoSerializer(many=True, read_only=True)
+    
+    # Lista de items que enviará el frontend [{producto_id: 1, cantidad: 2}, ...]
+    items = serializers.ListField(child=serializers.DictField(), write_only=True, required=False)
+
+    class Meta:
+        model = Pedido
+        fields = [
+            'id', 'usuario', 'fecha', 'estado', 'metodo_pago', 'sucursal',
+            'nombre_cliente', 'telefono_cliente', 'correo_cliente',
+            'total', 'detalles', 'items'
+        ]
+        read_only_fields = ['usuario', 'fecha', 'total', 'detalles']
+
+    def create(self, validated_data):
+        items_data = validated_data.pop('items')
+        
+        request = self.context.get('request')
+        usuario = request.user if request and request.user.is_authenticated else None
+        
+        pedido = Pedido.objects.create(usuario=usuario, total=0, **validated_data)
+        
+        total_pedido = 0
+        for item in items_data:
+            producto = Producto.objects.get(id=item['producto_id'])
+            cantidad = item['cantidad']
+            precio = producto.precio
+            
+            DetallePedido.objects.create(
+                pedido=pedido,
+                producto=producto,
+                cantidad=cantidad,
+                precio_unitario=precio
+            )
+            
+            total_pedido += (precio * cantidad)
+            
+            # Descontar stock
+            producto.stock -= cantidad
+            if producto.stock < 0:
+                producto.stock = 0
+            producto.save() # Esto también dispara la alerta de stock si corresponde
+            
+        pedido.total = total_pedido
+        pedido.save()
+        
+        return pedido

@@ -1,164 +1,108 @@
-<!-- home.html -->
 
-<!-- ── TOP BAR ── -->
-<div class="top-bar">
-  <span>📞 9-98732625</span>
-</div>
 
-<!-- ── NAVBAR ── -->
-<nav class="navbar">
-  <div class="navbar-logo">
-    <div class="logo-text">
-      <span class="logo-name">Ama Dablam</span>
-      <span class="logo-sub">Coffee</span>
-    </div>
-  </div>
-
-  <button class="menu-toggle" (click)="toggleMenu()">
-    {{ menuAbierto ? '✕' : '☰' }}
-  </button>
-
-  <ul class="nav-links" [class.open]="menuAbierto">
-    <li><a routerLink="/" class="active" (click)="menuAbierto = false">Inicio</a></li>
-    <li><a routerLink="/productos" (click)="menuAbierto = false">Productos</a></li>
-    <li><a routerLink="/contacto" (click)="menuAbierto = false">Contacto</a></li>
-  </ul>
-
-  <div class="nav-actions">
-    <button class="btn-login" routerLink="/login" *ngIf="!auth.isLoggedIn">
-      👤 Iniciar Sesión
-    </button>
-    <a class="btn-login btn-admin" routerLink="/admin/dashboard" *ngIf="auth.isLoggedIn && auth.isAdmin">
-      🔐 Panel Admin
-    </a>
-    <span class="btn-login btn-user" *ngIf="auth.isLoggedIn && !auth.isAdmin">
-      👤 {{ auth.currentUser?.email }}
-    </span>
-  </div>
-</nav>
-
-<!-- ── HERO SLIDER ── -->
-<section class="hero"
-  [style.background-image]="'linear-gradient(rgba(20,10,5,0.65), rgba(20,10,5,0.65)), url(' + slides[currentSlide].bg + ')'">
-
+<!-- ── HERO MAJESTIC ── -->
+<section class="hero" [style.background]="'url(assets/images/hero_premium.png)'">
   <div class="hero-content">
-    <div class="hero-brand">
-      <img src="assets/images/logo.jpg" alt="logo" class="logo-img">
-      <div>
-        <span class="hero-brand-name">Ama Dablam</span>
-        <span class="hero-brand-sub">Coffee</span>
-      </div>
+    <span class="hero-sub">Tostado Local • Calidad Global</span>
+    <h1 class="brand-font">El Arte de <br> <span class="text-gradient">Tostar Café</span></h1>
+    <p style="font-size: 1.2rem; color: #ccc; max-width: 600px; margin: 0 auto 30px;">Descubre sabores únicos en cada
+      taza, procesados artesanalmente en el corazón del Maule.</p>
+    <div class="hero-btn-group">
+      <a routerLink="/productos" class="btn-add-pro" style="max-width: 250px;">Explorar Catálogo</a>
     </div>
-
-    <h1>{{ slides[currentSlide].titulo }}</h1>
-
-    <a routerLink="/productos" class="btn-ver-productos">Ver Productos</a>
   </div>
-
-  <button class="slider-btn prev" (click)="prevSlide()">&#8249;</button>
-  <button class="slider-btn next" (click)="nextSlide()">&#8250;</button>
-
-  <div class="slider-dots">
-    <span
-      *ngFor="let s of slides; let i = index"
-      class="dot"
-      [class.active]="i === currentSlide"
-      (click)="goSlide(i)">
-    </span>
-  </div>
-
 </section>
 
 <!-- ── CATEGORÍAS ── -->
-<section class="categorias" *ngIf="categorias.length > 0">
-  <div
-    class="cat-card"
-    *ngFor="let c of categorias"
-    [routerLink]="['/productos']"
-    [queryParams]="{ categoria: c.id }">
-    <div class="cat-img">
-  {{ getIcon(c.nombre) }}
+<div class="section-title">
+  <span style="color: var(--primary); font-weight: 800; letter-spacing: 2px;">DESCUBRE</span>
+  <h2 class="brand-font">Nuestras <span class="text-gradient">Especialidades</span></h2>
 </div>
-    <p>{{ c.nombre }}</p>
+
+<div class="categorias-wrapper">
+  <div class="cat-card-new glass-card" *ngFor="let c of categorias" [routerLink]="['/productos']"
+    [queryParams]="{ categoria: c.id }">
+    <div class="cat-card-overlay">
+      <div class="cat-icon-circle">{{ getIcon(c.nombre) }}</div>
+      <h3 class="brand-font" style="font-size: 1.8rem; color: white;">{{ c.nombre }}</h3>
+      <p style="color: var(--primary); font-size: 0.8rem; margin-top: 10px;">VER PRODUCTOS →</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── SECCIÓN EXPERIENCIA ── -->
+<section class="experience-section">
+  <div class="experience-img" [style.background-image]="'url(assets/images/detail_premium.png)'"></div>
+  <div class="experience-text">
+    <span style="color: var(--primary); font-weight: 800;">CALIDAD SIN COMPROMISOS</span>
+    <h3 class="brand-font">La Experiencia <br> <span style="color: var(--primary);">Ama Dablam</span></h3>
+    <p>En Ama Dablam Coffee, cada grano cuenta una historia. Desde la selección manual en origen hasta nuestro tostado
+      cuidadoso, buscamos resaltar las notas únicas que hacen de cada taza un momento especial.</p>
+    <ul style="list-style: none; padding: 0; margin-bottom: 30px;">
+      <li style="margin-bottom: 10px;">✨ Granos de Especialidad</li>
+      <li style="margin-bottom: 10px;">🔥 Tostado en Lotes Pequeños</li>
+      <li style="margin-bottom: 10px;">📍 Frescura Local Garantizada</li>
+    </ul>
+    <a routerLink="/productos" style="color: #1a0f08; font-weight: 800; text-decoration: none;">CONOCE NUESTROS GRANOS
+      →</a>
   </div>
 </section>
 
 <!-- ── PRODUCTOS DESTACADOS ── -->
-<section class="destacados">
-  <div class="destacados-bg"></div>
-  <h2>Productos Destacados</h2>
+<div class="section-title">
+  <h2 class="brand-font">Lo Más <span class="text-gradient">Pedido</span></h2>
+  <p style="color: var(--text-muted);">Los favoritos de nuestra comunidad</p>
+</div>
 
-  <div class="productos-grid" *ngIf="productosDestacados.length > 0">
-    <div class="producto-card" *ngFor="let p of productosDestacados">
-      <div class="producto-img">
-        <img *ngIf="p.imagen_url" [src]="p.imagen_url" [alt]="p.nombre" />
-        <span *ngIf="!p.imagen_url" class="producto-emoji">☕</span>
-      </div>
-      <div class="producto-body">
-        <h3>{{ p.nombre }}</h3>
-        <p class="precio">{{ formatPrecio(p.precio) }}</p>
-        <button class="btn-carrito" routerLink="/productos">Agregar al Carrito</button>
+<div class="destacados-grid">
+  <div class="product-card-pro" *ngFor="let p of productosDestacados">
+    <div class="product-image-container">
+      <img *ngIf="p.imagen_url" [src]="p.imagen_url" [alt]="p.nombre"
+        style="width: 100%; height: 100%; object-fit: cover;" />
+      <span *ngIf="!p.imagen_url">{{ getProductoIcon(p.nombre) }}</span>
+      <div class="product-badge">Más vendidos</div>
+    </div>
+
+    <div class="product-info-pro">
+      <h3 class="product-title-pro">{{ p.nombre }}</h3>
+      <p class="product-desc-pro" style="font-size: 0.8rem;">{{ p.descripcion }}</p>
+
+      <div class="product-footer-pro">
+        <span class="product-price-pro">${{ p.precio | number:'1.0-0' }}</span>
+        <button class="btn-add-pro" style="width: auto; padding: 10px 20px; margin: 0;"
+          (click)="addToCart(p)">+</button>
       </div>
     </div>
   </div>
+</div>
 
-  <div class="sin-destacados" *ngIf="productosDestacados.length === 0">
-    <p>No hay productos destacados aún.</p>
-  </div>
-</section>
-
-<!-- ── MAPA Y UBICACIONES ── -->
-<section class="ubicacion">
-  <div class="ubicacion-info">
-    <h3>📍 Ama Dablam</h3>
-    <p class="ubicacion-sub">Tostamos Tu Próximo Café</p>
-    <p class="ubicacion-tel">📞 Llámanos: 9-98732652</p>
-
-    <div class="sucursales">
-      <div class="sucursal" *ngFor="let s of sucursales">
-        <span class="suc-icon">📍</span>
-        <div>
-          <strong>{{ s.nombre }}</strong>
-          <small>{{ s.distancia }}</small>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="mapa-wrap">
-    <iframe
-      [src]="mapUrl"
-      allowfullscreen
-      loading="lazy"
-      referrerpolicy="no-referrer-when-downgrade">
-    </iframe>
-  </div>
-</section>
-
-<!-- ── FOOTER ── -->
+<!-- ── FOOTER DE LUJO ── -->
 <footer class="footer">
-  <div class="footer-col">
-    <h4>Enlaces Útiles</h4>
-    <ul>
-      <li><a routerLink="/">Inicio</a></li>
-      <li><a routerLink="/productos">Productos</a></li>
-      <li><a href="#">Mayoristas</a></li>
+  <div>
+    <h2 class="brand-font text-gradient" style="font-size: 2rem;">Ama Dablam</h2>
+    <p style="color: #666; margin-top: 15px;">Tostamos sueños y despertamos sentidos. <br> Tu cafetería de especialidad
+      en Linares.</p>
+    <div style="display: flex; gap: 20px; margin-top: 25px; font-size: 1.5rem;">
+      <a href="#" style="color: var(--primary);">📷</a>
+      <a href="#" style="color: var(--primary);">📘</a>
+      <a href="#" style="color: var(--primary);">✉️</a>
+    </div>
+  </div>
+
+  <div>
+    <h4 class="brand-font" style="color: white; margin-bottom: 20px;">Navegación</h4>
+    <ul style="list-style: none; padding: 0; color: #888; display: flex; flex-direction: column; gap: 10px;">
+      <li>Inicio</li>
+      <li>Tienda Online</li>
+      <li>Suscripciones</li>
+      <li>Contacto</li>
     </ul>
   </div>
 
-  <div class="footer-col">
-    <h4>Contacto</h4>
-    <p>📞 9-98732652</p>
-    <p>✉️ Hola.amadablam&#64;gmail.com</p>
-    <p>📍 Catedral de Linares</p>
-  </div>
-
-  <div class="footer-col">
-    <h4>Síguenos</h4>
-    <div class="social-icons">
-      <a href="#" aria-label="Instagram">📷</a>
-      <a href="#" aria-label="Facebook">📘</a>
-      <a href="mailto:Hola.amadablam@gmail.com" aria-label="Email">✉️</a>
-    </div>
+  <div>
+    <h4 class="brand-font" style="color: white; margin-bottom: 20px;">Contacto</h4>
+    <p style="color: #888;">📍 Linares, Región del Maule</p>
+    <p style="color: #888;">📞 +56 9 9873 2652</p>
+    <p style="color: var(--primary); margin-top: 10px;">hola.amadablam@gmail.com</p>
   </div>
 </footer>

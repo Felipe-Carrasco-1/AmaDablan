@@ -32,6 +32,7 @@ class UsuarioManager(BaseUserManager):
 class Usuario(AbstractBaseUser, PermissionsMixin):
     ROL_CHOICES = [
         ('admin', 'Administrador'),
+        ('cajero', 'Cajero'),
         ('cliente', 'Cliente')
     ]
 
@@ -222,3 +223,73 @@ class AlertaStock(models.Model):
     class Meta:
         db_table = 'AlertaStock'
         ordering = ['-fecha']
+
+
+# ─────────────────────────────────────────────
+# PEDIDO Y DETALLES DEL CARRITO
+# ─────────────────────────────────────────────
+class Pedido(models.Model):
+    ESTADO_CHOICES = [
+        ('pendiente', 'Pendiente'),
+        ('pagado', 'Pagado'),
+        ('enviado', 'Enviado'),
+        ('entregado', 'Entregado'),
+        ('cancelado', 'Cancelado'),
+    ]
+
+    usuario = models.ForeignKey(
+        Usuario, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='pedidos'
+    )
+    fecha = models.DateTimeField(auto_now_add=True)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='pendiente')
+    metodo_pago = models.CharField(
+        max_length=20, 
+        choices=[('transferencia', 'Transferencia Bancaria'), ('efectivo', 'Efectivo/Presencial')], 
+        default='transferencia'
+    )
+    sucursal = models.CharField(
+        max_length=50,
+        choices=[
+            ('linares_catedral', 'Linares Catedral'),
+            ('linares_hospital', 'Linares Hospital'),
+            ('talca', 'Sucursal Talca')
+        ],
+        default='linares_catedral'
+    )
+    nombre_cliente = models.CharField(max_length=100, blank=True, null=True)
+    telefono_cliente = models.CharField(max_length=20, blank=True, null=True)
+    correo_cliente = models.EmailField(blank=True, null=True)
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
+    class Meta:
+        db_table = 'Pedido'
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f'Pedido {self.id} - {self.estado}'
+
+
+class DetallePedido(models.Model):
+    pedido = models.ForeignKey(
+        Pedido, 
+        on_delete=models.CASCADE, 
+        related_name='detalles'
+    )
+    producto = models.ForeignKey(
+        Producto, 
+        on_delete=models.SET_NULL, 
+        null=True
+    )
+    cantidad = models.PositiveIntegerField(default=1)
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2) 
+
+    class Meta:
+        db_table = 'DetallePedido'
+
+    def __str__(self):
+        nombre_prod = self.producto.nombre if self.producto else "Producto eliminado"
+        return f'{self.cantidad} x {nombre_prod}'

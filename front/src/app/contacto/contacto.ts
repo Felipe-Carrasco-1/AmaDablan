@@ -1,34 +1,44 @@
-import { Component, ViewEncapsulation } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../core/services/auth.service'; // ajusta ruta
+import { HttpClient } from '@angular/common/http';
+import { AuthService } from '../core/services/auth.service';
 
 @Component({
   standalone: true,
   selector: 'app-contacto',
-  imports: [CommonModule, RouterModule, FormsModule],
-  templateUrl: './contacto.html',
-  styleUrls: ['./contacto.css'],
-  encapsulation: ViewEncapsulation.None
+  imports: [CommonModule, FormsModule],
+  templateUrl: './contacto.html'
 })
 export class Contacto {
+  http = inject(HttpClient);
+  auth = inject(AuthService);
 
-  form = { nombre: '', email: '', mensaje: '' };
-  enviado = false;
+  form = {
+    nombre: '',
+    email: '',
+    mensaje: ''
+  };
+
   loading = false;
-
-  constructor(public auth: AuthService) {}
-
-  get isLoggedIn() { return this.auth.isLoggedIn; }
-  get isAdmin()    { return this.auth.isAdmin; }
+  enviado = false;
 
   enviar() {
+    if (!this.form.nombre || !this.form.email || !this.form.mensaje) {
+      alert('Por favor completa todos los campos.');
+      return;
+    }
+
     this.loading = true;
-    setTimeout(() => {
-      this.loading = false;
-      this.enviado = true;
-      this.form = { nombre: '', email: '', mensaje: '' };
-    }, 1200);
+    this.http.post('http://localhost:8000/api/contacto/', this.form).subscribe({
+      next: () => {
+        this.loading = false;
+        this.enviado = true;
+      },
+      error: () => {
+        this.loading = false;
+        alert('Hubo un error al enviar el mensaje. Por favor intenta de nuevo.');
+      }
+    });
   }
 }

@@ -149,6 +149,9 @@ export interface Dashboard {
   productos_destacados: number;
   productos_por_categoria: { nombre: string; total: number }[];
   productos_bajo_stock: any[];
+  ganancias_hoy: number;
+  total_pedidos_hoy: number;
+  ticket_promedio: number;
 }
 
 export interface AlertaStock {

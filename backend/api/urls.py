@@ -1,13 +1,12 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
-from django.conf import settings
-from django.conf.urls.static import static
 
 from .views import (
     UsuarioViewSet, CategoriaViewSet, ProductoViewSet,
     InventarioViewSet, AlertaStockViewSet, ReporteViewSet,
-    CustomTokenObtainPairView, enviar_contacto  # 👈 IMPORTANTE
+    CustomTokenObtainPairView, enviar_contacto, PedidoViewSet,
+    recuperar_password, reset_password
 )
 
 router = DefaultRouter()
@@ -17,13 +16,17 @@ router.register(r'productos', ProductoViewSet, basename='producto')
 router.register(r'inventario', InventarioViewSet, basename='inventario')
 router.register(r'alertas', AlertaStockViewSet, basename='alerta')
 router.register(r'reportes', ReporteViewSet, basename='reporte')
+router.register(r'pedidos', PedidoViewSet, basename='pedido')
 
 urlpatterns = [
+    # 🔑 RECUPERACIÓN (Mover arriba para evitar conflicto con router)
+    path('usuarios/recuperar-password/', recuperar_password),
+    path('usuarios/reset-password/', reset_password),
+
     path('', include(router.urls)),
     path('contacto/', enviar_contacto),
 
-    # 🔐 JWT AUTH (ESTO TE FALTABA)
+    # 🔐 JWT AUTH
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    
 ]

@@ -1,5 +1,9 @@
 from django.db.models import Count
 from django.core.mail import send_mail
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth import get_user_model
 
 from rest_framework import viewsets
 from rest_framework.decorators import action, api_view, permission_classes
@@ -9,7 +13,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .models import (
     Usuario, Categoria, Producto,
-    Inventario, Reporte, AlertaStock
+    Inventario, Reporte, AlertaStock, Pedido, DetallePedido
 )
 
 from .serializers import (
@@ -20,7 +24,8 @@ from .serializers import (
     ProductoCreateSerializer,
     InventarioSerializer,
     AlertaStockSerializer,
-    ReporteSerializer
+    ReporteSerializer,
+    PedidoSerializer
 )
 
 from .permissions import IsAdminUser, IsAdminOrReadOnly
@@ -183,6 +188,7 @@ class ReporteViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def dashboard(self, request):
+        from django.utils import timezone
 
         inventarios = Inventario.objects.select_related('producto')
 
@@ -195,6 +201,24 @@ class ReporteViewSet(viewsets.ModelViewSet):
             for inv in inventarios
             if inv.producto.stock <= inv.stock_minimo
         ]
+
+        # Finanzas del día (Excluye cancelados)
+        hoy = timezone.now().date()
+        from datetime import datetime, time
+        inicio_dia = timezone.make_aware(datetime.combine(hoy, time.min))
+        fin_dia = timezone.make_aware(datetime.combine(hoy, time.max))
+        
+        pedidos_hoy = Pedido.objects.filter(fecha__range=(inicio_dia, fin_dia))
+        
+        # Ganancias: Solo los entregados (Ventas reales)
+        ganancias_hoy = sum(p.total for p in pedidos_hoy if p.estado == 'entregado')
+        
+        # Pedidos Hoy: Todos los que no están cancelados (Flujo de trabajo)
+        total_pedidos_hoy = pedidos_hoy.exclude(estado='cancelado').count()
+        
+        # Ticket promedio: Basado en ventas entregadas
+        pedidos_entregados_count = pedidos_hoy.filter(estado='entregado').count()
+        ticket_promedio = ganancias_hoy / pedidos_entregados_count if pedidos_entregados_count > 0 else 0
 
         return Response({
             "total_productos": Producto.objects.count(),
@@ -210,8 +234,12 @@ class ReporteViewSet(viewsets.ModelViewSet):
                 .values('nombre', 'total')
             ),
 
-            # 🔥 FIX REAL AQUÍ
-            "productos_bajo_stock": productos_bajo_stock
+            "productos_bajo_stock": productos_bajo_stock,
+
+            # Nuevas métricas financieras
+            "ganancias_hoy": ganancias_hoy,
+            "total_pedidos_hoy": total_pedidos_hoy,
+            "ticket_promedio": ticket_promedio
         })
 
     @action(detail=False, methods=['post'])
@@ -260,3 +288,77 @@ class ReporteViewSet(viewsets.ModelViewSet):
         )
 
         return Response(ReporteSerializer(reporte).data, status=201)
+
+
+# =========================
+# PEDIDOS (CARRITO)
+# =========================
+class PedidoViewSet(viewsets.ModelViewSet):
+    queryset = Pedido.objects.all().order_by('-fecha')
+    serializer_class = PedidoSerializer
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [AllowAny()]
+        return [IsAdminUser()]
+
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
+    def mis_pedidos(self, request):
+        if not request.user.is_authenticated:
+            return Response({'error': 'Debes iniciar sesión para ver tus pedidos'}, status=401)
+        
+        pedidos = Pedido.objects.filter(usuario=request.user).order_by('-fecha')
+        serializer = self.get_serializer(pedidos, many=True)
+        return Response(serializer.data)
+
+
+# ─────────────────────────────────────────────
+# RECUPERACIÓN DE CONTRASEÑA (EXTEND)
+# ─────────────────────────────────────────────
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def recuperar_password(request):
+    email = request.data.get('email')
+    if not email:
+        return Response({'error': 'Email requerido'}, status=400)
+    
+    User = get_user_model()
+    try:
+        user = User.objects.get(email=email)
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        
+        # Simulación en consola (Ya que no hay SMTP configurado)
+        print(f"\n--- 📧 SIMULACIÓN DE RECUPERACIÓN ---")
+        print(f"Para: {email}")
+        print(f"Enlace para el frontend: http://localhost:4200/reset-password?uid={uid}&token={token}")
+        print(f"------------------------------------\n")
+        
+        return Response({'mensaje': 'Se ha enviado un enlace de recuperación a tu correo.'})
+    except User.DoesNotExist:
+        # Por seguridad no revelamos si existe
+        return Response({'mensaje': 'Se ha enviado un enlace de recuperación a tu correo.'})
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def reset_password(request):
+    uid = request.data.get('uid')
+    token = request.data.get('token')
+    password = request.data.get('password')
+
+    if not uid or not token or not password:
+        return Response({'error': 'Datos incompletos'}, status=400)
+
+    User = get_user_model()
+    try:
+        user_id = force_str(urlsafe_base64_decode(uid))
+        user = User.objects.get(pk=user_id)
+
+        if default_token_generator.check_token(user, token):
+            user.set_password(password)
+            user.save()
+            return Response({'mensaje': 'Contraseña actualizada con éxito.'})
+        else:
+            return Response({'error': 'El enlace es inválido o ha expirado.'}, status=400)
+    except Exception:
+        return Response({'error': 'Error procesando la solicitud.'}, status=400)

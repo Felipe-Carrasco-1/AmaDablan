@@ -1,162 +1,92 @@
-<!-- ── TOP BAR ── -->
-<div class="top-bar">
-  <span>📞 9-98732625</span>
-</div>
+<section class="contacto-hero-premium" style="background: linear-gradient(rgba(26, 15, 8, 0.8), rgba(26, 15, 8, 0.8)), url('assets/images/hero_premium.png'); background-size: cover; background-position: center; padding: 120px 5% 60px; text-align: center;">
+  <span class="hero-sub" style="color: var(--primary); letter-spacing: 5px; font-weight: 800;">CONTÁCTANOS</span>
+  <h1 class="brand-font" style="font-size: 3.5rem; color: white;">¿Hablamos de <span class="text-gradient">Café?</span></h1>
+  <p style="color: #ccc; max-width: 600px; margin: 20px auto 0;">Ya sea para una consulta, un pedido especial o simplemente para saludarnos, estamos a un mensaje de distancia.</p>
+</section>
 
-<!-- ── NAVBAR ── -->
-<nav class="navbar">
-  <div class="navbar-logo" routerLink="/" style="cursor:pointer">
-    <div class="logo-text">
-      <span class="logo-name">Ama Dablam</span>
-      <span class="logo-sub">Coffee</span>
-    </div>
-  </div>
-
-  <ul class="nav-links">
-    <li><a routerLink="/">Inicio</a></li>
-    <li><a routerLink="/productos">Productos</a></li>
-    <li><a routerLink="/contacto" class="active">Contacto</a></li>
-  </ul>
-
-  <div class="nav-actions">
-    <button class="btn-login" routerLink="/login" *ngIf="!isLoggedIn">
-      👤 Iniciar Sesión
-    </button>
-    <a class="btn-login btn-admin" routerLink="/admin/dashboard" *ngIf="isLoggedIn && isAdmin">
-      🔐 Panel Admin
-    </a>
-    <span class="btn-login btn-user" *ngIf="isLoggedIn && !isAdmin">
-      👤 {{ auth.currentUser?.email }}
-    </span>
-  </div>
-</nav>
-
-<!-- ── HERO CONTACTO ── -->
-<div class="contacto-hero">
-  <h1>Contáctanos</h1>
-  <p>Estamos aquí para ayudarte. Escríbenos y te responderemos a la brevedad.</p>
-</div>
-
-<!-- ── CONTENIDO ── -->
-<div class="contacto-wrapper">
-
-  <!-- FORMULARIO -->
-  <div class="contacto-form-card">
-    <h2>Envíanos un mensaje</h2>
-
-    <div class="alert-success" *ngIf="enviado">
-      ✅ ¡Mensaje enviado! Te contactaremos pronto.
+<section class="contacto-main-container" style="padding: 80px 5%; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 60px;">
+  
+  <!-- 📝 FORMULARIO PREMIUM -->
+  <div class="glass-card" style="padding: 40px; border-radius: 30px;">
+    <h2 class="brand-font" style="font-size: 2rem; margin-bottom: 30px;">Envíanos un <span style="color: var(--primary);">Mensaje</span></h2>
+    
+    <div class="alert-success" *ngIf="enviado" style="background: rgba(200,146,58,0.1); color: var(--primary); padding: 20px; border-radius: 15px; margin-bottom: 30px; border: 1px solid var(--primary);">
+      ✅ ¡Gracias por escribir! Te responderemos lo antes posible.
     </div>
 
-    <form (ngSubmit)="enviar()" *ngIf="!enviado">
-      <div class="form-group">
-        <label>Nombre completo</label>
-        <input
-          class="form-control"
-          type="text"
-          [(ngModel)]="form.nombre"
-          name="nombre"
-          placeholder="Tu nombre"
-          required />
+    <form (ngSubmit)="enviar()" *ngIf="!enviado" style="display: flex; flex-direction: column; gap: 20px;">
+      <div class="form-group-premium">
+        <label style="color: var(--primary); font-weight: 700; font-size: 0.8rem; text-transform: uppercase;">Tu Nombre</label>
+        <input type="text" [(ngModel)]="form.nombre" name="nombre" placeholder="Ej: Nicolas Fuentes" required 
+          style="width: 100%; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; margin-top: 5px;">
       </div>
 
-      <div class="form-group">
-        <label>Correo electrónico</label>
-        <input
-          class="form-control"
-          type="email"
-          [(ngModel)]="form.email"
-          name="email"
-          placeholder="tu@email.com"
-          required />
+      <div class="form-group-premium">
+        <label style="color: var(--primary); font-weight: 700; font-size: 0.8rem; text-transform: uppercase;">Correo Electrónico</label>
+        <input type="email" [(ngModel)]="form.email" name="email" placeholder="tu@email.com" required 
+          style="width: 100%; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; margin-top: 5px;">
       </div>
 
-      <div class="form-group">
-        <label>Mensaje</label>
-        <textarea
-          class="form-control"
-          [(ngModel)]="form.mensaje"
-          name="mensaje"
-          rows="5"
-          placeholder="¿En qué podemos ayudarte?"
-          required>
-        </textarea>
+      <div class="form-group-premium">
+        <label style="color: var(--primary); font-weight: 700; font-size: 0.8rem; text-transform: uppercase;">¿Cómo podemos ayudarte?</label>
+        <textarea [(ngModel)]="form.mensaje" name="mensaje" rows="5" placeholder="Cuéntanos más..." required 
+          style="width: 100%; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: white; margin-top: 5px;"></textarea>
       </div>
 
-      <button type="submit" class="btn-enviar" [disabled]="loading">
-        {{ loading ? 'Enviando...' : '✉️ Enviar mensaje' }}
+      <button type="submit" class="btn-add-pro" [disabled]="loading" style="margin-top: 10px;">
+        {{ loading ? 'ENVIANDO...' : 'ENVIAR MENSAJE' }}
       </button>
     </form>
   </div>
 
-  <!-- INFO CONTACTO -->
-  <div class="contacto-info">
-    <h2>Información de contacto</h2>
+  <!-- 📍 INFORMACIÓN DE CONTACTO -->
+  <div style="display: flex; flex-direction: column; gap: 40px;">
+    
+    <div>
+      <h3 class="brand-font" style="font-size: 1.8rem; margin-bottom: 20px;">Nuestras <span style="color: var(--primary);">Casas</span></h3>
+      
+      <div class="contact-item" style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 25px;">
+        <span style="font-size: 1.5rem; background: var(--primary); padding: 10px; border-radius: 12px; color: #1a0f08;">📍</span>
+        <div>
+          <strong style="color: white; display: block;">Linares Catedral</strong>
+          <p style="color: #888; font-size: 0.9rem;">Plaza de Armas, Corazón de Linares.</p>
+        </div>
+      </div>
 
-    <div class="info-item">
-      <span class="info-icon">📞</span>
-      <div>
-        <strong>Teléfono</strong>
-        <p>9-98732652</p>
+      <div class="contact-item" style="display: flex; gap: 20px; align-items: flex-start; margin-bottom: 25px;">
+        <span style="font-size: 1.5rem; background: var(--primary); padding: 10px; border-radius: 12px; color: #1a0f08;">📍</span>
+        <div>
+          <strong style="color: white; display: block;">Linares Hospital</strong>
+          <p style="color: #888; font-size: 0.9rem;">Sector Salud, siempre cerca de ti.</p>
+        </div>
       </div>
     </div>
 
-    <div class="info-item">
-      <span class="info-icon">✉️</span>
-      <div>
-        <strong>Email</strong>
-        <p>info&#64;amadablamcoffee.cl</p>
-      </div>
+    <div>
+      <h4 class="brand-font" style="font-size: 1.5rem; margin-bottom: 20px;">Habla con un <span style="color: var(--primary);">Experto</span></h4>
+      <p style="color: #888; margin-bottom: 10px;">📞 +56 9 9873 2652</p>
+      <p style="color: var(--primary);">✉️ hola.amadablam@gmail.com</p>
     </div>
 
-    <div class="info-item">
-      <span class="info-icon">📍</span>
-      <div>
-        <strong>Dirección principal</strong>
-        <p>Catedral de Linares, Maule</p>
-      </div>
+    <div class="glass-card" style="padding: 20px; border-radius: 20px; border: 1px dashed var(--primary);">
+      <h5 style="color: white; font-weight: 800; margin-bottom: 10px;">HORARIOS DE TOSTADO</h5>
+      <p style="font-size: 0.85rem; color: #ccc;">Lunes a Viernes: 08:30 - 20:00<br>Sábados: 10:00 - 18:00</p>
     </div>
 
-    <div class="info-item">
-      <span class="info-icon">🕐</span>
-      <div>
-        <strong>Horario</strong>
-        <p>Lunes a Viernes: 9:00 - 18:00</p>
-        <p>Sábado: 10:00 - 14:00</p>
-      </div>
-    </div>
-
-    <div class="social-section">
-      <h3>Síguenos</h3>
-      <div class="social-icons">
-        <a href="#" aria-label="Instagram">📷 Instagram</a>
-        <a href="#" aria-label="Facebook">📘 Facebook</a>
-      </div>
-    </div>
   </div>
 
-</div>
+</section>
 
-<!-- ── FOOTER ── -->
-<footer class="footer">
-  <div class="footer-col">
-    <h4>Enlaces Útiles</h4>
-    <ul>
-      <li><a routerLink="/">Inicio</a></li>
-      <li><a routerLink="/productos">Productos</a></li>
-    </ul>
-  </div>
-  <div class="footer-col">
-    <h4>Contacto</h4>
-    <p>📞 9-98732652</p>
-    <p>✉️ info&#64;amadablamcoffee.cl</p>
-    <p>📍 Catedral de Linares</p>
-  </div>
-  <div class="footer-col">
-    <h4>Síguenos</h4>
-    <div class="social-icons">
-      <a href="#" aria-label="Instagram">📷</a>
-      <a href="#" aria-label="Facebook">📘</a>
-    </div>
-  </div>
-</footer>
+<!-- ── MAPA DINÁMICO ── -->
+<section style="height: 450px; width: 100%; filter: grayscale(1) invert(1) contrast(1.2);">
+  <iframe
+    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3248.8130831613045!2d-71.59972!3d-35.84583!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMzXCsDUwJzQ1LjAiUyA3McKwMzUnNTkuMCJX!5e0!3m2!1ses-419!2scl!4v1650460000000!5m2!1ses-419!2scl"
+    width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+</section>
+
+<style>
+  @media (max-width: 900px) {
+    .contacto-main-container { grid-template-columns: 1fr; }
+    .contacto-hero-premium h1 { font-size: 2.5rem; }
+  }
+</style>

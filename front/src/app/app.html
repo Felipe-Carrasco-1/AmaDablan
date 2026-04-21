@@ -1,133 +1,73 @@
-<!-- home.component.html -->
-<div class="page-wrapper">
-
-  <!-- TOP BAR -->
-  <div class="top-bar">
-    <span class="phone-icon">📞</span>
-    <span>9-98732625</span>
+<!-- ── NAVBAR GLOBAL ── -->
+<nav class="navbar" [class.scrolled]="isScrolled" *ngIf="esPublico()">
+  <div class="navbar-logo" routerLink="/">
+    <div class="logo-text">
+      <span class="logo-name brand-font">Ama Dablam</span>
+    </div>
   </div>
 
-  <!-- NAVBAR -->
-  <nav class="navbar">
-    <div class="navbar-logo">
-      <img src="assets/images/logo.png" alt="Ama Dablam Coffee" class="logo-img" />
-    </div>
-    <ul class="nav-links">
-      <li><a routerLink="/" class="active">Inicio</a></li>
-      <li><a routerLink="/productos">Productos</a></li>
-      <li><a routerLink="/contacto">Contacto</a></li>
-    </ul>
-    <button class="btn-login" routerLink="/login">
-      👤 Iniciar Sesión
+  <button class="menu-toggle" (click)="toggleMenu()">
+    {{ menuAbierto ? '✕' : '☰' }}
+  </button>
+
+  <ul class="nav-links" [class.open]="menuAbierto">
+    <li><a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">El Origen</a></li>
+    <li><a routerLink="/nuestro-grano" routerLinkActive="active">Nuestro Grano</a></li>
+    <li><a routerLink="/productos" routerLinkActive="active">Tienda</a></li>
+    <li><a routerLink="/contacto" routerLinkActive="active">Contacto</a></li>
+  </ul>
+
+  <div class="nav-actions">
+    <button class="btn-login" routerLink="/login" *ngIf="!auth.isLoggedIn">
+      👤 Ingresar
     </button>
-  </nav>
+    <a class="btn-login btn-admin" routerLink="/admin/dashboard" *ngIf="auth.isLoggedIn && auth.isAdmin">
+      🔐 Gestión
+    </a>
+    <span class="btn-login" style="border:none" *ngIf="auth.isLoggedIn && !auth.isAdmin">
+      ☕ Hola, {{ auth.currentUser?.email?.split('@')[0] }}
+    </span>
+  </div>
+</nav>
 
-  <!-- HERO SLIDER -->
-  <section class="hero">
-    <div class="hero-slide active">
-      <img src="assets/images/hero-bg.jpg" alt="Hero" class="hero-bg" />
-      <div class="hero-overlay"></div>
-      <div class="hero-content">
-        <img src="assets/images/logo-white.png" alt="Ama Dablam Coffee" class="hero-logo" />
-        <h1>Tostamos tu próximo café</h1>
-        <button class="btn-hero" routerLink="/productos">Ver Productos</button>
-      </div>
-    </div>
-    <button class="slider-prev" (click)="prevSlide()">&#8249;</button>
-    <button class="slider-next" (click)="nextSlide()">&#8250;</button>
-    <div class="slider-dots">
-      <span class="dot active"></span>
-      <span class="dot"></span>
-      <span class="dot"></span>
-      <span class="dot"></span>
-    </div>
-  </section>
+<!-- ── CONTENIDO DINÁMICO ── -->
+<main style="min-height: 80vh; padding-top: 0px;">
+  <router-outlet></router-outlet>
+</main>
 
-  <!-- CATEGORÍAS -->
-  <section class="categories">
-    <div class="category-card" *ngFor="let cat of categories" (click)="filterByCategory(cat.slug)">
-      <img [src]="cat.image" [alt]="cat.name" />
-      <p>{{ cat.name }}</p>
-    </div>
-  </section>
+<!-- ── CARRITO FLOTANTE ── -->
+<ng-container *ngIf="mostrarCarrito()">
+  <app-carrito></app-carrito>
+  <button class="floating-cart-btn" (click)="cartService.toggleCart()" *ngIf="cartService.totalItems() > 0">
+    🛒 <span class="badge">{{ cartService.totalItems() }}</span>
+  </button>
+</ng-container>
 
-  <!-- PRODUCTOS DESTACADOS -->
-  <section class="featured">
-    <div class="featured-bg"></div>
-    <h2>Productos Destacados</h2>
-    <div class="products-grid">
-      <div class="product-card" *ngFor="let product of featuredProducts">
-        <div class="product-img-wrap">
-          <img [src]="product.image" [alt]="product.name" />
-        </div>
-        <div class="product-info">
-          <h3>{{ product.name }}</h3>
-          <p class="price">${{ product.price | number }}</p>
-          <button class="btn-cart" (click)="addToCart(product)">Agregar al Carrito</button>
-        </div>
-      </div>
+<!-- ── FOOTER GLOBAL ── -->
+<footer class="footer" *ngIf="esPublico()" style="padding: 100px 5% 50px; background: #000; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 50px;">
+  <div>
+    <h2 class="brand-font text-gradient" style="font-size: 2rem;">Ama Dablam</h2>
+    <p style="color: #666; margin-top: 15px;">Tostamos sueños y despertamos sentidos. <br> Tu cafetería de especialidad en Linares.</p>
+    <div style="display: flex; gap: 20px; margin-top: 25px; font-size: 1.5rem;">
+      <a href="#" style="color: var(--primary);">📷</a>
+      <a href="#" style="color: var(--primary);">📘</a>
+      <a href="#" style="color: var(--primary);">✉️</a>
     </div>
-  </section>
+  </div>
+  
+  <div>
+    <h4 class="brand-font" style="color: white; margin-bottom: 20px;">Explorar</h4>
+    <ul style="list-style: none; padding: 0; color: #888; display: flex; flex-direction: column; gap: 10px;">
+      <li><a routerLink="/" style="color: inherit; text-decoration: none;">Inicio</a></li>
+      <li><a routerLink="/productos" style="color: inherit; text-decoration: none;">Productos</a></li>
+      <li><a routerLink="/nuestro-grano" style="color: inherit; text-decoration: none;">Nuestro Grano</a></li>
+    </ul>
+  </div>
 
-  <!-- MAPA Y UBICACIONES -->
-  <section class="location-section">
-    <div class="location-info">
-      <h3>📍 Ama Dablam</h3>
-      <p class="subtitle">Marañan de Carrlee</p>
-      <p class="phone">📞 Llámanos: 9-98732652</p>
-      <div class="branches">
-        <div class="branch" *ngFor="let branch of branches">
-          <span class="branch-icon">📍</span>
-          <div>
-            <strong>{{ branch.name }}</strong>
-            <span class="branch-distance">{{ branch.distance }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="map-container">
-      <iframe
-        [src]="mapUrl"
-        width="100%"
-        height="100%"
-        style="border:0;"
-        allowfullscreen=""
-        loading="lazy"
-        referrerpolicy="no-referrer-when-downgrade">
-      </iframe>
-    </div>
-  </section>
-
-  <!-- FOOTER -->
-  <footer class="footer">
-    <div class="footer-col">
-      <h4>Enlaces Útiles</h4>
-      <ul>
-        <li><a routerLink="/">Inicio</a></li>
-        <li><a routerLink="/productos">Productos</a></li>
-        <li><a routerLink="/mayoristas">Mayoristas</a></li>
-      </ul>
-    </div>
-    <div class="footer-col">
-      <h4>Contacto</h4>
-      <p>📞 9-98732652</p>
-      <p>✉️ info@amadablamcoffee.cl</p>
-      <p>📍 Catedral de Linares</p>
-    </div>
-    <div class="footer-col">
-      <h4>Síguenos</h4>
-      <div class="social-icons">
-        <a href="#" target="_blank" aria-label="Instagram">
-          <img src="assets/icons/instagram.svg" alt="Instagram" />
-        </a>
-        <a href="#" target="_blank" aria-label="Facebook">
-          <img src="assets/icons/facebook.svg" alt="Facebook" />
-        </a>
-        <a href="mailto:info@amadablamcoffee.cl" aria-label="Email">
-          <img src="assets/icons/email.svg" alt="Email" />
-        </a>
-      </div>
-    </div>
-  </footer>
-
-</div>
+  <div>
+    <h4 class="brand-font" style="color: white; margin-bottom: 20px;">Contacto</h4>
+    <p style="color: #888;">📍 Linares, Región del Maule</p>
+    <p style="color: #888;">📞 +56 9 9873 2652</p>
+    <p style="color: var(--primary); margin-top: 10px;">hola.amadablam@gmail.com</p>
+  </div>
+</footer>

@@ -1,0 +1,111 @@
+<div class="barra-volver">
+  <a routerLink="/" class="btn-volver">← Volver al inicio</a>
+</div>
+
+<div class="checkout-container">
+  <h1 class="page-title">Finalizar Pedido</h1>
+  
+  <div class="checkout-grid">
+    <!-- Formulario de Datos -->
+    <div class="checkout-form-section">
+      <h2 class="section-title">Tus Datos de Contacto</h2>
+      <div class="form-group">
+        <label>Nombre Completo</label>
+        <input type="text" [(ngModel)]="nombre" placeholder="Ej: Juan Pérez" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Teléfono (WhatsApp)</label>
+        <input type="text" [(ngModel)]="telefono" placeholder="Ej: +56912345678" class="form-control">
+      </div>
+      <div class="form-group">
+        <label>Correo Electrónico</label>
+        <input type="email" [(ngModel)]="correo" placeholder="Ej: juan@email.com" class="form-control">
+      </div>
+
+      <h2 class="section-title mt-4">¿En qué sucursal retirarás?</h2>
+      <div class="payment-selector" style="margin-bottom: 2.5rem;">
+        <label class="radio-label">
+          <input type="radio" name="sucursal_checkout" value="linares_catedral" [(ngModel)]="sucursal">
+          <span>📍 Linares Catedral</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="sucursal_checkout" value="linares_hospital" [(ngModel)]="sucursal">
+          <span>🏥 Linares Hospital</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="sucursal_checkout" value="talca" [(ngModel)]="sucursal">
+          <span>🏙️ Sucursal Talca</span>
+        </label>
+      </div>
+
+      <h2 class="section-title">Método de Pago</h2>
+      <div class="payment-selector">
+        <label class="radio-label">
+          <input type="radio" name="pago_checkout" value="transferencia" [(ngModel)]="metodoPago">
+          <span>🏦 Transferencia Bancaria</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="pago_checkout" value="efectivo" [(ngModel)]="metodoPago">
+          <span>💵 Efectivo al Retirar</span>
+        </label>
+      </div>
+
+      <!-- Datos de Transferencia -->
+      <div class="bank-details" *ngIf="metodoPago === 'transferencia'">
+        <h3>Datos para Transferencia</h3>
+        <p><strong>Banco:</strong> BancoEstado</p>
+        <p><strong>Tipo de Cuenta:</strong> Cuenta RUT</p>
+        <p><strong>Número de Cuenta:</strong> 19.123.456-7</p>
+        <p><strong>Nombre:</strong> Ama Dablam Coffee</p>
+        <p><strong>Correo:</strong> pagos@amadablamcoffee.cl</p>
+        <div class="info-note">Una vez confirmado el pedido, realiza la transferencia desde tu banco indicando tu nombre en el mensaje.</div>
+      </div>
+      
+      <!-- Datos de Efectivo -->
+      <div class="cash-details" *ngIf="metodoPago === 'efectivo'">
+        <h3>Pago Presencial</h3>
+        <p>Has seleccionado pago en efectivo. Tu pedido quedará agendado y lo pagarás directamente en la caja cuando vengas a retirarlo a nuestra sucursal. ¡Te esperamos!</p>
+      </div>
+
+      <div class="alert-message mt-3" *ngIf="mensaje" [ngClass]="mensajeTipo">
+        {{ mensaje }}
+      </div>
+
+      <button class="btn-confirm" (click)="confirmarPedido()" [disabled]="procesando || cartService.items().length === 0">
+        {{ procesando ? 'Procesando...' : 'Confirmar Pedido' }}
+      </button>
+    </div>
+
+    <!-- Resumen Lateral -->
+    <div class="checkout-summary-section">
+      <h2 class="section-title">Resumen de tu Pedido</h2>
+      
+      <div class="summary-items">
+        <div class="summary-item" *ngFor="let item of cartService.items()">
+          <div class="item-img">
+            <img [src]="item.imagen ? item.imagen : 'assets/no-image.png'" [alt]="item.nombre">
+            <span class="item-qty">{{ item.cantidad }}</span>
+          </div>
+          <div class="item-info">
+            <h4>{{ item.nombre }}</h4>
+            <p>{{ item.precio | currency:'CLP':'symbol-narrow':'1.0-0' }} c/u</p>
+          </div>
+          <div class="item-total">
+            {{ (item.precio * item.cantidad) | currency:'CLP':'symbol-narrow':'1.0-0' }}
+          </div>
+        </div>
+      </div>
+
+      <div class="summary-totals">
+        <div class="total-row">
+          <span>Subtotal</span>
+          <span>{{ cartService.total() | currency:'CLP':'symbol-narrow':'1.0-0' }}</span>
+        </div>
+        <div class="total-row grand-total">
+          <span>Total a Pagar</span>
+          <span>{{ cartService.total() | currency:'CLP':'symbol-narrow':'1.0-0' }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

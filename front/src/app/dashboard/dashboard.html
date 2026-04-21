@@ -9,19 +9,27 @@
 
   <!-- KPI Cards -->
   <div class="kpi-grid" *ngIf="dashboard">
-    <div class="kpi-card">
-      <div class="kpi-icon">☕</div>
+    <div class="kpi-card" style="background: linear-gradient(135deg, #16a34a, #15803d); color: white; border: none;">
+      <div class="kpi-icon" style="background: rgba(255,255,255,0.2);">💰</div>
       <div class="kpi-info">
-        <span class="kpi-value">{{ dashboard.total_productos }}</span>
-        <span class="kpi-label">Productos activos</span>
+        <span class="kpi-value" style="color: white;">{{ dashboard.ganancias_hoy | currency:'CLP':'symbol-narrow':'1.0-0' }}</span>
+        <span class="kpi-label" style="color: #e2e8f0;">Ganancias de Hoy</span>
       </div>
     </div>
 
     <div class="kpi-card">
-      <div class="kpi-icon">🗂️</div>
+      <div class="kpi-icon">☕</div>
       <div class="kpi-info">
-        <span class="kpi-value">{{ dashboard.total_categorias }}</span>
-        <span class="kpi-label">Categorías</span>
+        <span class="kpi-value">{{ dashboard.total_pedidos_hoy }}</span>
+        <span class="kpi-label">Pedidos Hoy</span>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-info">
+        <span class="kpi-value">{{ dashboard.ticket_promedio | currency:'CLP':'symbol-narrow':'1.0-0' }}</span>
+        <span class="kpi-label">Ticket Promedio</span>
       </div>
     </div>
 
@@ -120,6 +128,83 @@
         </a>
       </div>
     </div>
+
+    <!-- Pedidos Recientes -->
+    <div class="card" style="grid-column: 1 / -1;">
+      <h3 class="card-title">🛒 Últimos Pedidos (Reservas)</h3>
+      
+      <div *ngIf="pedidosRecientes.length === 0" class="empty-state">
+        <p>No hay pedidos recientes.</p>
+      </div>
+
+      <div class="table-responsive" *ngIf="pedidosRecientes.length > 0">
+        <table class="orders-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Sucursal</th>
+              <th>Cliente y Contacto</th>
+              <th>Productos</th>
+              <th>Método</th>
+              <th>Total</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of pedidosRecientes">
+              <td>{{ p.fecha | date:'dd/MM HH:mm' }}</td>
+              <td>
+                <span class="badge" style="background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-size: 0.8rem;">
+                  {{ formatSucursal(p.sucursal) }}
+                </span>
+              </td>
+              <td>
+                <strong>{{ p.nombre_cliente || 'Invitado' }}</strong><br>
+                <span class="contact-info" *ngIf="p.telefono_cliente">📞 {{ p.telefono_cliente }}</span>
+                <span *ngIf="p.telefono_cliente && p.correo_cliente" style="margin: 0 5px; color: #cbd5e1;">|</span>
+                <span class="contact-info" *ngIf="p.correo_cliente">✉️ {{ p.correo_cliente }}</span>
+              </td>
+              <td>
+                <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem; color: #475569;">
+                  <li *ngFor="let item of p.detalles" style="margin-bottom: 2px;">
+                    <strong>{{ item.cantidad }}x</strong> {{ item.producto_nombre }}
+                  </li>
+                </ul>
+              </td>
+              <td>
+                <span class="badge" [class.badge-primary]="p.metodo_pago === 'transferencia'" [class.badge-secondary]="p.metodo_pago === 'efectivo'">
+                  {{ p.metodo_pago === 'transferencia' ? 'Transferencia' : 'Efectivo' }}
+                </span>
+              </td>
+              <td class="total-col">{{ p.total | currency:'CLP':'symbol-narrow':'1.0-0' }}</td>
+              <td>
+                <span class="badge" 
+                  [class.badge-warning]="p.estado === 'pendiente'"
+                  [class.badge-primary]="p.estado === 'preparacion'"
+                  [class.badge-success]="p.estado === 'entregado'"
+                  [class.badge-danger]="p.estado === 'cancelado'">
+                  {{ p.estado | uppercase }}
+                </span>
+              </td>
+              <td>
+                <select class="status-select" [value]="p.estado" (change)="actualizarEstado(p, $event)">
+                  <option value="pendiente">Pendiente</option>
+                  <option value="entregado">Entregado</option>
+                  <option value="cancelado">Cancelado</option>
+                </select>
+              </td>
+              <td style="text-align: center;">
+                <button (click)="imprimirBoleta(p)" style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 8px; border-radius: 8px; cursor: pointer; font-size: 1.2rem;" title="Imprimir Ticket">
+                  🖨️
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 
   <!-- LOADING -->

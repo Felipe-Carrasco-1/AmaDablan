@@ -1,37 +1,74 @@
-<!-- ── BOTÓN VOLVER ── -->
-<div class="barra-volver">
-  <a routerLink="/" class="btn-volver">← Volver al inicio</a>
+<div class="barra-volver" style="padding: 1.5rem; background: rgba(26, 15, 8, 0.5); backdrop-filter: blur(5px);">
+  <a routerLink="/" class="btn-volver" style="color: var(--primary); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+    <span>←</span> Volver a la Experiencia Ama Dablam
+  </a>
 </div>
 
-<section class="catalogo">
-  <h2>Catálogo de Productos</h2>
+<section class="catalogo" style="padding: 2rem; max-width: 1400px; margin: 0 auto;">
+  
+  <div class="hero-mini" style="text-align: center; margin-bottom: 3rem;">
+    <h2 class="brand-font" style="font-size: 3rem; margin-bottom: 0.5rem;">Nuestra <span class="text-gradient">Colección</span></h2>
+    <p style="color: var(--text-muted); font-size: 1.1rem;">Selección artesanal de granos y sabores para tu día</p>
+  </div>
+
+  <!-- 🔍 BUSCADOR PREMIUM -->
+  <div class="search-wrapper">
+    <span class="search-icon">🔍</span>
+    <input 
+      type="text" 
+      class="search-input" 
+      [(ngModel)]="searchTerm" 
+      placeholder="¿Qué café te apetece hoy? (ej: Capuchino, Moka, Croissant...)" />
+  </div>
 
   <!-- Cargando -->
-  <div *ngIf="loading" class="loading">
-    <span>☕ Cargando productos...</span>
+  <div *ngIf="loading" class="loading" style="text-align: center; padding: 4rem;">
+    <span style="font-size: 3rem; display: block; animation: pulse 1.5s infinite;">☕</span>
+    <p style="margin-top: 1rem; color: var(--primary);">Preparando tu catálogo...</p>
   </div>
 
-  <!-- Error -->
-  <div *ngIf="error && !loading" class="error-msg">
-    {{ error }}
-  </div>
+  <!-- Grid de Productos -->
+  <div class="grid" *ngIf="!loading && !error" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 2rem;">
 
-  <!-- Grid solo cuando ya cargó -->
-  <div class="grid" *ngIf="!loading && !error">
-
-    <div *ngIf="productos.length === 0" class="empty">
-      No hay productos disponibles.
+    <div *ngIf="filteredProductos.length === 0" class="empty" style="grid-column: 1 / -1; text-align: center; padding: 4rem; background: var(--bg-card); border-radius: 20px;">
+      <p style="font-size: 1.2rem; color: var(--text-muted);">No encontramos ningún producto que coincida con tu búsqueda.</p>
+      <button (click)="searchTerm = ''" style="margin-top: 1rem; background: none; border: 1px solid var(--primary); color: var(--primary); padding: 8px 20px; border-radius: 50px; cursor: pointer;">Ver todos</button>
     </div>
 
-    <div class="card" *ngFor="let p of productos">
-      <img [src]="p.imagen_url || 'assets/no-image.png'" [alt]="p.nombre" />
-      <h3>{{ p.nombre }}</h3>
-      <p class="desc">{{ p.descripcion }}</p>
-      <div class="footer">
-        <span class="price">${{ p.precio | number:'1.0-0' }}</span>
-        <span class="stock">Stock: {{ p.stock }}</span>
+    <!-- TARJETA PREMIUM -->
+    <div class="product-card-pro" *ngFor="let p of filteredProductos">
+      <div class="product-image-container">
+        <img *ngIf="p.imagen_url" [src]="p.imagen_url" [alt]="p.nombre" style="width: 100%; height: 100%; object-fit: cover;" />
+        <span *ngIf="!p.imagen_url">{{ getProductoIcon(p.nombre) }}</span>
+        <div class="product-badge" *ngIf="p.destacado">Destacado</div>
+      </div>
+      
+      <div class="product-info-pro">
+        <h3 class="product-title-pro">{{ p.nombre }}</h3>
+        <p class="product-desc-pro">{{ p.descripcion }}</p>
+        
+        <div class="product-footer-pro">
+          <span class="product-price-pro">${{ p.precio | number:'1.0-0' }}</span>
+          <span style="font-size: 0.8rem; color: var(--text-muted);" *ngIf="p.stock > 0">Disponibilidad: {{ p.stock }}</span>
+          <span style="font-size: 0.8rem; color: #ef4444;" *ngIf="p.stock <= 0">Agotado</span>
+        </div>
+
+        <button 
+          class="btn-add-pro" 
+          [disabled]="p.stock <= 0"
+          (click)="addToCart(p)">
+          {{ p.stock > 0 ? 'Añadir al Carrito' : 'Sin Stock' }}
+        </button>
       </div>
     </div>
 
   </div>
 </section>
+
+<style>
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.5; }
+}
+</style>

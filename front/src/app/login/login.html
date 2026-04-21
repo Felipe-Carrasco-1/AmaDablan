@@ -21,6 +21,9 @@
         <label>Contraseña</label>
         <input type="password" class="form-control" [(ngModel)]="password" name="password" required placeholder="••••••••" />
       </div>
+      <div style="text-align: right; margin-top: -10px; margin-bottom: 20px;">
+        <a routerLink="/forgot-password" style="font-size: 0.85rem; color: #64748b; text-decoration: none;">¿Olvidaste tu contraseña?</a>
+      </div>
       <button type="submit" class="btn btn-primary w-100 mt-2" [disabled]="loading">
         {{ loading ? 'Ingresando...' : 'Iniciar Sesión' }}
       </button>

@@ -1,0 +1,61 @@
+<!-- Fondo oscuro detrás del panel -->
+<div class="cart-overlay" [class.open]="cartService.isCartOpen()" (click)="cartService.toggleCart()"></div>
+
+<!-- Panel deslizante lateral -->
+<div class="cart-offcanvas" [class.open]="cartService.isCartOpen()">
+  <div class="cart-header">
+    <h2>Tu Pedido</h2>
+    <button class="close-btn" (click)="cartService.toggleCart()">✕</button>
+  </div>
+  
+  <div class="cart-content" *ngIf="cartService.items().length > 0; else emptyCart">
+    <div class="cart-items-scroll">
+      <div class="cart-item" *ngFor="let item of cartService.items()">
+        <img [src]="item.imagen ? item.imagen : 'assets/no-image.png'" [alt]="item.nombre">
+        <div class="item-info">
+          <h4>{{ item.nombre }}</h4>
+          <p class="price">{{ item.precio | currency:'CLP':'symbol-narrow':'1.0-0' }}</p>
+          <div class="qty-controls">
+            <button (click)="decreaseQty(item)">-</button>
+            <span>{{ item.cantidad }}</span>
+            <button (click)="increaseQty(item)">+</button>
+          </div>
+        </div>
+        <button class="remove-btn" (click)="removeItem(item)" title="Quitar">✕</button>
+      </div>
+    </div>
+    
+    <div class="cart-footer">
+      <div class="payment-methods">
+        <h3>Método de Pago</h3>
+        <label class="radio-label">
+          <input type="radio" name="pago" value="transferencia" [(ngModel)]="metodoPago">
+          <span>🏦 Transferencia Bancaria</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="pago" value="efectivo" [(ngModel)]="metodoPago">
+          <span>💵 Efectivo al Retirar</span>
+        </label>
+      </div>
+
+      <div class="total-row">
+        <span>Total a Pagar</span>
+        <span class="total-price">{{ cartService.total() | currency:'CLP':'symbol-narrow':'1.0-0' }}</span>
+      </div>
+      <div class="alert-message" *ngIf="mensaje" [ngClass]="mensajeTipo">
+        {{ mensaje }}
+      </div>
+      <button class="checkout-btn" (click)="irACheckout()" [disabled]="cartService.items().length === 0">
+        Continuar al Pago
+      </button>
+    </div>
+  </div>
+  
+  <ng-template #emptyCart>
+    <div class="empty-state">
+      <div class="icon">☕</div>
+      <p>Aún no hay café en tu carrito.</p>
+      <button class="btn-shop" (click)="cartService.toggleCart()" routerLink="/productos">Ver Catálogo</button>
+    </div>
+  </ng-template>
+</div>
