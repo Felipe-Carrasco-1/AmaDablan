@@ -24,9 +24,12 @@
     <a class="btn-login btn-admin" routerLink="/admin/dashboard" *ngIf="auth.isLoggedIn && auth.isAdmin">
       🔐 Gestión
     </a>
-    <span class="btn-login" style="border:none" *ngIf="auth.isLoggedIn && !auth.isAdmin">
+    <a class="btn-login" style="border:none; color: var(--primary);" routerLink="/pos" *ngIf="auth.isLoggedIn && auth.isCajero">
       ☕ Hola, {{ auth.currentUser?.email?.split('@')[0] }}
-    </span>
+    </a>
+    <a class="btn-login" style="border:none; color: var(--primary);" routerLink="/stock" *ngIf="auth.isLoggedIn && auth.isEncargadoStock">
+      📦 Hola, {{ auth.currentUser?.email?.split('@')[0] }}
+    </a>
   </div>
 </nav>
 

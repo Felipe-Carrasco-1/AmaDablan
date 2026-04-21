@@ -1,8 +1,9 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   standalone: true,
@@ -16,6 +17,8 @@ export class PosComponent implements OnInit {
   cdr = inject(ChangeDetectorRef);
   router = inject(Router);
 
+  auth = inject(AuthService);
+
   productos: any[] = [];
   categorias: any[] = [];
   categoriaSeleccionada: any = 'todos';
@@ -24,18 +27,91 @@ export class PosComponent implements OnInit {
   total = 0;
   
   metodoPago = 'efectivo';
-  sucursalActual = 'linares_catedral'; 
   
   procesando = false;
+  cajaAbierta: any = null;
+  montoInicial = 0;
+  montoFinal = 0;
+  
+  activeTab: string = 'venta'; // 'venta', 'caja', 'historial'
+  ventasHoy: any[] = [];
+
+  get headers() {
+    return { headers: new HttpHeaders({ 'Authorization': `Bearer ${localStorage.getItem('access')}` }) };
+  }
 
   ngOnInit() {
+    this.verificarCaja();
     this.cargarDatos();
   }
 
+  verificarCaja() {
+    this.http.get<any[]>('http://localhost:8000/api/cajas/?estado=abierta', this.headers).subscribe(res => {
+      const cajasUsuario = res.filter(c => c.usuario === this.auth.currentUser?.id);
+      if (cajasUsuario.length > 0) {
+        this.cajaAbierta = cajasUsuario[0];
+      } else {
+        this.cajaAbierta = null;
+      }
+    });
+  }
+
+  abrirCaja() {
+    this.procesando = true;
+    this.http.post<any>('http://localhost:8000/api/cajas/abrir/', { monto_inicial: this.montoInicial }, this.headers).subscribe({
+      next: (res) => {
+        this.cajaAbierta = res;
+        this.procesando = false;
+        this.activeTab = 'venta'; // Volver a venta
+      },
+      error: (err) => {
+        alert(err.error?.error || 'Error al abrir caja');
+        this.procesando = false;
+      }
+    });
+  }
+
+  cerrarCaja() {
+    if (!this.cajaAbierta) return;
+    this.procesando = true;
+    this.http.post<any>(`http://localhost:8000/api/cajas/${this.cajaAbierta.id}/cerrar/`, { monto_final: this.montoFinal }, this.headers).subscribe({
+      next: () => {
+        this.cajaAbierta = null;
+        this.procesando = false;
+        alert('Caja cerrada correctamente');
+      },
+      error: (err) => {
+        alert(err.error?.error || 'Error al cerrar caja');
+        this.procesando = false;
+      }
+    });
+  }
+
+  cambiarTab(tab: string) {
+    this.activeTab = tab;
+    if (tab === 'historial') {
+      this.cargarHistorial();
+    }
+  }
+
+  cargarHistorial() {
+    this.http.get<any[]>('http://localhost:8000/api/pedidos/', this.headers).subscribe(res => {
+      // Filtrar solo los de hoy y de la sucursal actual
+      const hoy = new Date().toISOString().split('T')[0];
+      this.ventasHoy = res.filter(p => p.fecha.startsWith(hoy) && p.sucursal === this.auth.sucursalId);
+      this.cdr.detectChanges();
+    });
+  }
+
+  getTotalVentasHoy(): number {
+    return this.ventasHoy.reduce((sum, v) => sum + (v.total || 0), 0);
+  }
+
   cargarDatos() {
-    this.http.get<any[]>('http://localhost:8000/api/categorias/').subscribe(res => this.categorias = res);
-    this.http.get<any[]>('http://localhost:8000/api/productos/?estado=true').subscribe(res => {
-      this.productos = res;
+    this.http.get<any[]>('http://localhost:8000/api/categorias/', this.headers).subscribe(res => this.categorias = res);
+    this.http.get<any[]>('http://localhost:8000/api/productos/?estado=true', this.headers).subscribe(res => {
+      // Filtrar solo los que tienen stock en la sucursal
+      this.productos = res.filter(p => p.stock > 0);
       this.cdr.detectChanges();
     });
   }
@@ -79,13 +155,14 @@ export class PosComponent implements OnInit {
     this.procesando = true;
     const payload = {
       metodo_pago: this.metodoPago,
-      sucursal: this.sucursalActual,
+      sucursal: this.auth.sucursalId,
+      caja: this.cajaAbierta?.id,
       nombre_cliente: 'Venta Presencial',
       items: this.carrito.map(i => ({ producto_id: i.id, cantidad: i.cantidad })),
       estado: 'entregado'
     };
 
-    this.http.post('http://localhost:8000/api/pedidos/', payload).subscribe({
+    this.http.post('http://localhost:8000/api/pedidos/', payload, this.headers).subscribe({
       next: (res: any) => {
         this.procesando = true;
         this.imprimirTicket(res);
@@ -136,7 +213,7 @@ export class PosComponent implements OnInit {
         </head>
         <body>
           <div class="header"><strong>AMA DABLAM COFFEE</strong><br>Venta Presencial #${pedido.id}</div>
-          <div style="font-size: 0.8rem; margin-top: 5px;">Fecha: ${fecha}<br>Sucursal: Linares Catedral</div>
+          <div style="font-size: 0.8rem; margin-top: 5px;">Fecha: ${fecha}<br>Cajero: ${this.auth.currentUser?.email}</div>
           <table>${itemsHtml}</table>
           <div class="total"><span>TOTAL:</span><span>$${Number(pedido.total).toLocaleString('es-CL')}</span></div>
           <div style="text-align: center; font-size: 0.7rem; margin-top: 15px;">¡Gracias por su visita!</div>

@@ -1,86 +1,224 @@
-<div class="pos-container">
-  
-  <!-- 🗂️ CATEGORÍAS Y PRODUCTOS -->
-  <div class="pos-main">
-    <div class="pos-categories">
-      <button 
-        class="cat-btn" 
-        [class.active]="categoriaSeleccionada === 'todos'" 
-        (click)="categoriaSeleccionada = 'todos'">
-        📂 Todos
-      </button>
-      <button 
-        class="cat-btn" 
-        *ngFor="let cat of categorias" 
-        [class.active]="categoriaSeleccionada == cat.id"
-        (click)="categoriaSeleccionada = cat.id">
-        {{ cat.nombre }}
-      </button>
-    </div>
-
-    <div class="pos-grid">
-      <div 
-        class="pos-card" 
-        *ngFor="let p of productosFiltrados" 
-        (click)="agregarAlCarrito(p)">
-        <div class="pos-card-icon">{{ getIcon(p.nombre) }}</div>
-        <div class="pos-card-info">
-          <span class="pos-card-name">{{ p.nombre }}</span>
-          <span class="pos-card-price">${{ p.precio | number:'1.0-0' }}</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 🛒 PANEL DE CARRITO Y PAGO -->
-  <div class="pos-sidebar">
+<!-- LAYOUT DEL CAJERO -->
+<div class="app-layout">
+  <!-- SIDEBAR IZQUIERDO -->
+  <aside class="sidebar">
     <div class="sidebar-header">
-      <h3>🛒 Venta Actual</h3>
-      <button class="btn-clear" (click)="carrito = []; total = 0" *ngIf="carrito.length > 0">Vaciar</button>
-    </div>
-
-    <div class="sidebar-items">
-      <div *ngIf="carrito.length === 0" class="empty-cart">
-        <span style="font-size: 3rem; display: block; margin-bottom: 1rem;">☕</span>
-        <p>Selecciona productos <br> para iniciar la venta</p>
-      </div>
-
-      <div class="cart-item" *ngFor="let item of carrito">
-        <div class="item-info">
-          <strong>{{ item.nombre }}</strong>
-          <span>${{ item.precio | number:'1.0-0' }}</span>
-        </div>
-        <div class="item-controls">
-          <button (click)="cambiarCantidad(item.id, -1)">-</button>
-          <span>{{ item.cantidad }}</span>
-          <button (click)="cambiarCantidad(item.id, 1)">+</button>
+      <div class="logo">
+        <span style="font-size: 24px; margin-right: 10px;">☕</span>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-weight: 700; font-size: 1.1rem; color: white;">Cafetería</span>
+          <span style="font-size: 0.75rem; color: #cbd5e1; font-weight: normal;">{{ auth.currentUser?.email }}</span>
+          <span style="font-size: 0.65rem; color: #94a3b8; letter-spacing: 1px;">CAJERO</span>
         </div>
       </div>
     </div>
 
-    <div class="sidebar-footer" *ngIf="carrito.length > 0">
-      <div class="total-row">
-        <span>TOTAL</span>
-        <span>${{ total | number:'1.0-0' }}</span>
-      </div>
+    <nav class="sidebar-nav">
+      <a class="nav-item" [class.active]="activeTab === 'venta'" (click)="cambiarTab('venta')">
+        <span class="icon">🛒</span> Nueva venta
+      </a>
+      <a class="nav-item" [class.active]="activeTab === 'caja'" (click)="cambiarTab('caja')">
+        <span class="icon">🖨️</span> Caja
+      </a>
+      <a class="nav-item" [class.active]="activeTab === 'historial'" (click)="cambiarTab('historial')">
+        <span class="icon">🧾</span> Historial
+      </a>
+    </nav>
 
-      <div class="payment-methods">
-        <label class="pay-option">
-          <input type="radio" name="pago" [(ngModel)]="metodoPago" value="efectivo">
-          <span class="pay-box">💵 Efectivo</span>
-        </label>
-        <label class="pay-option">
-          <input type="radio" name="pago" [(ngModel)]="metodoPago" value="transferencia">
-          <span class="pay-box">💳 Transf.</span>
-        </label>
-      </div>
-
-      <button 
-        class="btn-finalize" 
-        [disabled]="procesando"
-        (click)="finalizarVenta()">
-        {{ procesando ? '⏳ PROCESANDO...' : '✅ FINALIZAR E IMPRIMIR' }}
-      </button>
+    <div class="sidebar-footer">
+      <a class="nav-item" style="cursor:pointer;" (click)="auth.logout()">
+        <span class="icon">🚪</span> Cerrar sesión
+      </a>
     </div>
-  </div>
+  </aside>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="main-content">
+    
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <h1 class="page-title">Punto de Venta</h1>
+      <div class="header-right">
+        <div class="user-badge" style="background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 6px; font-size: 0.85rem;">
+          🏪 Sede Principal
+        </div>
+      </div>
+    </header>
+
+    <!-- ÁREA DE CONTENIDO DE PESTAÑAS -->
+    <div class="content-wrapper" style="padding: 0; display: flex; flex-direction: column; height: calc(100vh - 60px);">
+      
+      <!-- ==============================================
+           PESTAÑA 1: NUEVA VENTA (POS)
+           ============================================== -->
+      <div class="tab-content" *ngIf="activeTab === 'venta'" style="flex: 1; display: flex; flex-direction: column;">
+        
+        <!-- Alerta si no hay caja -->
+        <div *ngIf="!cajaAbierta" style="background: #fff7ed; border-left: 4px solid #ea580c; padding: 15px 20px; color: #ea580c; font-weight: 600; margin: 15px;">
+          ⚠️ No hay caja abierta. Ve a <a (click)="cambiarTab('caja')" style="text-decoration: underline; cursor: pointer;">Caja</a> para abrir una antes de vender.
+        </div>
+
+        <div class="pos-container" style="flex: 1; height: auto;">
+          <!-- 🗂️ CATEGORÍAS Y PRODUCTOS -->
+          <div class="pos-main">
+            <!-- Barra de búsqueda superior -->
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+              <select class="form-control" style="width: 200px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+                <option value="todos">Categoría (Todos)</option>
+                <option *ngFor="let cat of categorias" [value]="cat.id">{{ cat.nombre }}</option>
+              </select>
+              <input type="text" placeholder="Buscar producto..." style="flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;">
+            </div>
+
+            <div class="pos-grid">
+              <div 
+                class="pos-card" 
+                [class.disabled]="!cajaAbierta"
+                *ngFor="let p of productosFiltrados" 
+                (click)="cajaAbierta && agregarAlCarrito(p)">
+                <div class="pos-card-info" style="text-align: left;">
+                  <span class="pos-card-name" style="font-weight: 600; font-size: 0.95rem; display: block;">{{ p.nombre }}</span>
+                  <span class="pos-card-price" style="font-weight: 700; display: block; margin-top: 5px;">${{ p.precio | number:'1.0-0' }}</span>
+                  <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 10px;">Stock: {{ p.stock || 0 }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 🛒 PANEL DE CARRITO Y PAGO -->
+          <div class="pos-sidebar">
+            <div class="sidebar-header" style="background: #4a3b32; color: white; padding: 15px; display: flex; justify-content: space-between;">
+              <h3 style="margin: 0; font-size: 1rem;">🛒 Carrito ({{ carrito.length }})</h3>
+              <button *ngIf="carrito.length > 0" (click)="carrito = []; total = 0" style="background: none; border: none; color: #f87171; cursor: pointer;">Vaciar</button>
+            </div>
+
+            <div class="sidebar-items">
+              <div *ngIf="carrito.length === 0" class="empty-cart" style="text-align: center; color: #94a3b8; padding: 50px 20px;">
+                <span style="font-size: 3rem; display: block; margin-bottom: 1rem; color: #cbd5e1;">🛒</span>
+                <p>Carrito vacío</p>
+              </div>
+
+              <div class="cart-item" *ngFor="let item of carrito">
+                <div class="item-info">
+                  <strong>{{ item.nombre }}</strong>
+                  <span>${{ item.precio | number:'1.0-0' }}</span>
+                </div>
+                <div class="item-controls">
+                  <button (click)="cambiarCantidad(item.id, -1)">-</button>
+                  <span>{{ item.cantidad }}</span>
+                  <button (click)="cambiarCantidad(item.id, 1)">+</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="sidebar-footer" *ngIf="carrito.length > 0">
+              <div class="total-row">
+                <span>TOTAL</span>
+                <span>${{ total | number:'1.0-0' }}</span>
+              </div>
+
+              <div class="payment-methods">
+                <label class="pay-option">
+                  <input type="radio" name="pago" [(ngModel)]="metodoPago" value="efectivo">
+                  <span class="pay-box">💵 Efectivo</span>
+                </label>
+                <label class="pay-option">
+                  <input type="radio" name="pago" [(ngModel)]="metodoPago" value="transferencia">
+                  <span class="pay-box">💳 Transf.</span>
+                </label>
+              </div>
+
+              <button 
+                class="btn-finalize" 
+                [disabled]="procesando || !cajaAbierta"
+                (click)="finalizarVenta()">
+                {{ procesando ? '⏳ PROCESANDO...' : '✅ FINALIZAR E IMPRIMIR' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==============================================
+           PESTAÑA 2: CAJA
+           ============================================== -->
+      <div class="tab-content" *ngIf="activeTab === 'caja'" style="padding: 20px;">
+        <h2 style="font-size: 1.5rem; margin-bottom: 20px;">Caja — Sede Principal</h2>
+        
+        <div style="background: white; max-width: 500px; margin: 0 auto; padding: 40px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center;">
+          
+          <div *ngIf="!cajaAbierta">
+            <div style="font-size: 4rem; color: #94a3b8; margin-bottom: 20px;">🖨️</div>
+            <h2 style="font-size: 1.5rem; margin-bottom: 10px;">No hay caja abierta</h2>
+            <p style="color: #64748b; margin-bottom: 30px; font-size: 0.95rem;">Para comenzar a vender debes abrir la caja con el monto inicial en efectivo.</p>
+            
+            <div style="text-align: left; margin-bottom: 20px;">
+              <label style="font-size: 0.85rem; color: #64748b; margin-bottom: 5px; display: block;">Monto inicial ($)</label>
+              <input type="number" [(ngModel)]="montoInicial" placeholder="0" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem;">
+            </div>
+
+            <button [disabled]="procesando" (click)="abrirCaja()" style="width: 100%; padding: 15px; background: #5c4033; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 1rem;">
+              {{ procesando ? '⏳ Abriendo...' : '🔓 Abrir caja' }}
+            </button>
+          </div>
+
+          <div *ngIf="cajaAbierta">
+            <div style="font-size: 4rem; color: #16a34a; margin-bottom: 20px;">✅</div>
+            <h2 style="font-size: 1.5rem; margin-bottom: 10px;">Caja Abierta</h2>
+            <p style="color: #64748b; margin-bottom: 30px; font-size: 0.95rem;">Apertura: <strong>{{ cajaAbierta.fecha_apertura | date:'shortTime' }}</strong></p>
+            
+            <div style="text-align: left; margin-bottom: 20px;">
+              <label style="font-size: 0.85rem; color: #64748b; margin-bottom: 5px; display: block;">Monto final reportado ($)</label>
+              <input type="number" [(ngModel)]="montoFinal" placeholder="0" style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem;">
+            </div>
+
+            <button [disabled]="procesando" (click)="cerrarCaja()" style="width: 100%; padding: 15px; background: #e74c3c; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 1rem;">
+              {{ procesando ? '⏳ Cerrando...' : '🔒 Cerrar caja' }}
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ==============================================
+           PESTAÑA 3: HISTORIAL
+           ============================================== -->
+      <div class="tab-content" *ngIf="activeTab === 'historial'" style="padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="font-size: 1.5rem; margin: 0;">Mis ventas de hoy</h2>
+          <span style="color: #64748b; font-size: 0.95rem;">{{ ventasHoy.length }} ventas - Total: <strong>${{ getTotalVentasHoy() | number:'1.0-0' }}</strong></span>
+        </div>
+
+        <div *ngIf="ventasHoy.length === 0" style="text-align: center; padding: 100px 20px; color: #94a3b8;">
+          <div style="font-size: 3rem; margin-bottom: 15px;">🧾</div>
+          <p>No hay ventas registradas hoy</p>
+        </div>
+
+        <div *ngIf="ventasHoy.length > 0" style="background: white; border-radius: 8px; border: 1px solid #e2e8f0;">
+          <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid #e2e8f0; color: #64748b; font-size: 0.85rem;">
+                <th style="padding: 15px;">Hora</th>
+                <th style="padding: 15px;">Detalle</th>
+                <th style="padding: 15px;">Método</th>
+                <th style="padding: 15px;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let v of ventasHoy" style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 15px;">{{ v.fecha | date:'shortTime' }}</td>
+                <td style="padding: 15px;">
+                  <span *ngFor="let d of v.detalles; let last = last">{{ d.cantidad }}x {{ d.producto_nombre }}{{ !last ? ', ' : '' }}</span>
+                </td>
+                <td style="padding: 15px;">{{ v.metodo_pago }}</td>
+                <td style="padding: 15px; font-weight: 600;">${{ v.total | number:'1.0-0' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
 </div>

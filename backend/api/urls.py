@@ -6,7 +6,7 @@ from .views import (
     UsuarioViewSet, CategoriaViewSet, ProductoViewSet,
     InventarioViewSet, AlertaStockViewSet, ReporteViewSet,
     CustomTokenObtainPairView, enviar_contacto, PedidoViewSet,
-    recuperar_password, reset_password
+    recuperar_password, reset_password, SucursalViewSet, CajaViewSet, MovimientoStockViewSet
 )
 
 router = DefaultRouter()
@@ -17,6 +17,9 @@ router.register(r'inventario', InventarioViewSet, basename='inventario')
 router.register(r'alertas', AlertaStockViewSet, basename='alerta')
 router.register(r'reportes', ReporteViewSet, basename='reporte')
 router.register(r'pedidos', PedidoViewSet, basename='pedido')
+router.register(r'sucursales', SucursalViewSet, basename='sucursal')
+router.register(r'cajas', CajaViewSet, basename='caja')
+router.register(r'movimientos', MovimientoStockViewSet, basename='movimiento')
 
 urlpatterns = [
     # 🔑 RECUPERACIÓN (Mover arriba para evitar conflicto con router)

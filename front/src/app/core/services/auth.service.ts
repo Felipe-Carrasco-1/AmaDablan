@@ -53,7 +53,22 @@ export class AuthService {
   }
 
   get isAdmin(): boolean {
-    // Ajusta 'rol' según lo que devuelva tu API de Django
     return this.currentUser?.rol === 'admin' || this.currentUser?.is_staff === true;
+  }
+
+  get isCajero(): boolean {
+    return this.currentUser?.rol === 'cajero';
+  }
+
+  get isEncargadoStock(): boolean {
+    return this.currentUser?.rol === 'encargado_stock';
+  }
+
+  get sucursalId(): number | null {
+    return this.currentUser?.sucursal || null;
+  }
+
+  get sucursalName(): string {
+    return this.currentUser?.sucursal_nombre || 'Sede Principal';
   }
 }

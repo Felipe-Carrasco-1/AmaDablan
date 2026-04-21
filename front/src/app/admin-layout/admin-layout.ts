@@ -13,7 +13,7 @@ import { FormsModule } from '@angular/forms';
   styleUrls: ['./admin-layout.css']
 })
 export class AdminLayout {
-  constructor(private auth: AuthService) {}
+  constructor(public auth: AuthService) {}
   get userEmail() { return this.auth.currentUser?.email ?? ''; }
   logout() { this.auth.logout(); }
 }

@@ -1,123 +1,237 @@
-<!-- pages/admin/inventario/inventario.component.html -->
-<div class="admin-page">
-  <div class="page-header">
-    <div>
-      <h2>Inventario</h2>
-      <p class="text-muted">Control de stock y alertas de productos</p>
-    </div>
-  </div>
-
-  <!-- 🔔 ALERTAS -->
-  <div class="alertas-section" *ngIf="alertas.length > 0">
-
-    <div class="alertas-header">
-      <h3>🔔 Alertas activas ({{ alertasNoLeidas }})</h3>
-
-      <button
-        class="btn btn-sm btn-secondary"
-        (click)="marcarTodasLeidas()"
-      >
-        Marcar todas como leídas
-      </button>
+<!-- LAYOUT CONTROL DE STOCK -->
+<div class="app-layout">
+  <!-- SIDEBAR IZQUIERDO -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span style="font-size: 24px; margin-right: 10px;">☕</span>
+        <div style="display: flex; flex-direction: column;">
+          <span style="font-weight: 700; font-size: 1.1rem; color: white;">Cafetería</span>
+          <span style="font-size: 0.75rem; color: #cbd5e1; font-weight: normal;">{{ auth.currentUser?.email }}</span>
+          <span style="font-size: 0.65rem; color: #94a3b8; letter-spacing: 1px; text-transform: uppercase;">Control de Stock</span>
+        </div>
+      </div>
     </div>
 
-    <div
-      class="alerta-item"
-      *ngFor="let a of alertas"
-    >
-      <div>
-        <strong>{{ a.producto }}</strong>
+    <nav class="sidebar-nav">
+      <a class="nav-item" [class.active]="activeTab === 'inventario'" (click)="cambiarTab('inventario')">
+        <span class="icon">📦</span> Inventario
+      </a>
+      <a class="nav-item" [class.active]="activeTab === 'alertas'" (click)="cambiarTab('alertas')">
+        <span class="icon">🔔</span> Alertas
+      </a>
+      <a class="nav-item" [class.active]="activeTab === 'movimientos'" (click)="cambiarTab('movimientos')">
+        <span class="icon">🔃</span> Movimientos
+      </a>
+    </nav>
 
-        <p>
-          {{ a.stock }} uds (mínimo {{ a.stock_minimo }})
-        </p>
+    <div class="sidebar-footer">
+      <a class="nav-item logout" style="cursor:pointer;" (click)="auth.logout()">
+        <span class="icon">🚪</span> Cerrar sesión
+      </a>
+    </div>
+  </aside>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main class="main-content">
+    
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <h1 class="page-title">Control de Stock</h1>
+      <div class="header-right">
+        <div class="user-badge" style="background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 6px; font-size: 0.85rem;">
+          🏪 {{ auth.sucursalName || 'Sede Principal' }}
+        </div>
+      </div>
+    </header>
+
+    <!-- ÁREA DE CONTENIDO DE PESTAÑAS -->
+    <div class="content-wrapper" style="padding: 20px; overflow-y: auto; height: calc(100vh - 60px);">
+
+      <!-- ==============================================
+           PESTAÑA 1: INVENTARIO
+           ============================================== -->
+      <div class="tab-content" *ngIf="activeTab === 'inventario'">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="font-size: 1.5rem; margin: 0; color: #1e293b;">Inventario — {{ auth.sucursalName || 'Sede Principal' }}</h2>
+          <button class="btn-refresh" (click)="cargarDatos()">
+            ↻ Actualizar
+          </button>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-value">{{ getTotalProductos() }}</div>
+            <div class="kpi-label">Productos totales</div>
+          </div>
+          <div class="kpi-card" style="color: #16a34a;">
+            <div class="kpi-value">{{ getStockOk() }}</div>
+            <div class="kpi-label">Stock OK</div>
+          </div>
+          <div class="kpi-card" style="color: #ea580c;">
+            <div class="kpi-value">{{ getStockBajo() }}</div>
+            <div class="kpi-label">Stock bajo</div>
+          </div>
+          <div class="kpi-card" style="color: #dc2626;">
+            <div class="kpi-value">{{ getAgotados() }}</div>
+            <div class="kpi-label">Agotados</div>
+          </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filters-bar">
+          <div class="filter-group">
+            <label>Filtrar estado</label>
+            <select [(ngModel)]="filtroEstado">
+              <option value="todos">Todos</option>
+              <option value="ok">OK</option>
+              <option value="bajo">Bajo</option>
+              <option value="agotado">Agotado</option>
+            </select>
+          </div>
+          <div class="filter-group search-group">
+            <input type="text" placeholder="Buscar producto..." [(ngModel)]="busqueda">
+            <span class="search-icon">🔍</span>
+          </div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Mínimo</th>
+                <th>Estado</th>
+                <th>Última actualización</th>
+                <th>Reponer</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let inv of filteredInventarios" [class.row-warning]="inv.stock <= inv.stock_minimo && inv.stock > 0" [class.row-danger]="inv.stock === 0">
+                <td style="font-weight: 600;">{{ inv.producto.nombre }}</td>
+                <td style="font-weight: 700; font-size: 1.1rem;" [ngClass]="{'text-success': inv.stock > inv.stock_minimo, 'text-warning': inv.stock <= inv.stock_minimo && inv.stock > 0, 'text-danger': inv.stock === 0}">
+                  {{ inv.stock }}
+                </td>
+                <td style="color: #64748b;">{{ inv.stock_minimo }}</td>
+                <td>
+                  <span class="badge" [ngClass]="{'badge-ok': getEstadoTexto(inv) === 'OK', 'badge-warning': getEstadoTexto(inv) === 'BAJO', 'badge-danger': getEstadoTexto(inv) === 'AGOTADO'}">
+                    {{ getEstadoTexto(inv) }}
+                  </span>
+                </td>
+                <td style="color: #94a3b8; font-size: 0.85rem;">{{ inv.producto.fecha_creacion | date:'dd/MM HH:mm' }}</td>
+                <td>
+                  <button class="btn-add" (click)="ajustarStock(inv, 5)" title="Añadir +5 rápido">+</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div *ngIf="filteredInventarios.length === 0" style="padding: 40px; text-align: center; color: #94a3b8;">
+            No hay productos que coincidan con la búsqueda.
+          </div>
+        </div>
       </div>
 
-      <button
-        class="btn btn-sm btn-secondary"
-        (click)="marcarLeida(a)"
-        *ngIf="!a.leida"
-      >
-        ✓ Marcar leída
-      </button>
+      <!-- ==============================================
+           PESTAÑA 2: ALERTAS
+           ============================================== -->
+      <div class="tab-content" *ngIf="activeTab === 'alertas'">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="font-size: 1.5rem; margin: 0; color: #1e293b;">Alertas de stock</h2>
+          <span style="color: #64748b;">{{ alertas.length }} alerta(s) pendiente(s)</span>
+        </div>
+
+        <div class="alert-banner" *ngIf="alertas.length > 0">
+          ⚠️ Repón los productos listados antes de que se agoten.
+        </div>
+
+        <div *ngIf="alertas.length === 0" style="text-align: center; padding: 100px 20px; color: #94a3b8;">
+          <div style="font-size: 3rem; margin-bottom: 15px;">✅</div>
+          <p>No hay alertas de stock pendientes</p>
+        </div>
+
+        <div class="table-container" *ngIf="alertas.length > 0">
+          <table>
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Sucursal</th>
+                <th>Nivel</th>
+                <th>Generada</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let a of alertas" class="row-warning">
+                <td style="font-weight: 600;">{{ a.producto_nombre }}</td>
+                <td style="color: #64748b;">{{ a.sucursal ? auth.sucursalName : 'Global' }}</td>
+                <td><span class="badge badge-warning">BAJO</span></td>
+                <td style="color: #94a3b8; font-size: 0.85rem;">{{ a.fecha | date:'dd/MM HH:mm' }}</td>
+                <td>
+                  <button class="btn-resolve" (click)="marcarAlertaResuelta(a.id)">
+                    ✓ Marcar resuelta
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ==============================================
+           PESTAÑA 3: MOVIMIENTOS
+           ============================================== -->
+      <div class="tab-content" *ngIf="activeTab === 'movimientos'">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h2 style="font-size: 1.5rem; margin: 0; color: #1e293b;">Historial de movimientos</h2>
+          <button class="btn-refresh" (click)="cargarMovimientos()">
+            ↻ Actualizar
+          </button>
+        </div>
+
+        <div *ngIf="movimientos.length === 0" style="text-align: center; padding: 100px 20px; color: #94a3b8;">
+          <div style="font-size: 3rem; margin-bottom: 15px;">🔃</div>
+          <p>No hay movimientos registrados</p>
+        </div>
+
+        <div class="table-container" *ngIf="movimientos.length > 0">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Producto</th>
+                <th>Tipo</th>
+                <th>Cantidad</th>
+                <th>Antes → Después</th>
+                <th>Motivo</th>
+                <th>Usuario</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let m of movimientos">
+                <td style="color: #64748b; font-size: 0.85rem;">{{ m.fecha | date:'dd/MM HH:mm' }}</td>
+                <td style="font-weight: 600;">{{ m.producto_nombre }}</td>
+                <td>
+                  <span [ngStyle]="{'color': m.tipo === 'ENTRADA' ? '#16a34a' : '#dc2626', 'font-weight': '700'}">
+                    {{ m.tipo }}
+                  </span>
+                </td>
+                <td [ngStyle]="{'color': m.tipo === 'ENTRADA' ? '#16a34a' : '#dc2626'}">
+                  {{ m.tipo === 'ENTRADA' ? '+' : '' }}{{ m.cantidad }}
+                </td>
+                <td style="color: #64748b;">
+                  {{ m.stock_antes }} → {{ m.stock_despues }}
+                </td>
+                <td style="color: #94a3b8;">{{ m.motivo }}</td>
+                <td style="color: #64748b; font-size: 0.85rem;">{{ m.usuario_email || 'Sistema' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
-
-  </div>
-
-  <!-- 📦 TABLA INVENTARIO -->
-  <div class="card table-wrap">
-
-    <table>
-      <thead>
-        <tr>
-          <th>Producto</th>
-          <th>Stock actual</th>
-          <th>Stock mínimo</th>
-          <th>Estado</th>
-          <th>Ajustar stock</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr *ngFor="let p of productos">
-
-          <!-- NOMBRE -->
-          <td>
-            <strong>{{ p.nombre }}</strong>
-          </td>
-
-          <!-- STOCK -->
-          <td>
-            <span
-              class="stock-val"
-              [class.danger]="p.stock <= p.stock_minimo"
-            >
-              {{ p.stock }}
-            </span>
-          </td>
-
-          <!-- MÍNIMO -->
-          <td>
-            {{ p.stock_minimo }}
-          </td>
-
-          <!-- ESTADO -->
-          <td>
-            <span
-              class="badge"
-              [class.badge-danger]="p.stock <= p.stock_minimo"
-              [class.badge-success]="p.stock > p.stock_minimo"
-            >
-              {{ p.stock <= p.stock_minimo ? '⚠ Bajo mínimo' : '✓ OK' }}
-            </span>
-          </td>
-
-          <!-- AJUSTE -->
-          <td>
-            <div class="stock-adjust">
-
-              <input
-                type="number"
-                class="form-control"
-                style="width: 80px"
-                [(ngModel)]="ajustes[p.id]"
-                placeholder="±"
-              />
-
-              <button
-                class="btn btn-sm btn-primary"
-                (click)="ajustarStock(p)"
-              >
-                Aplicar
-              </button>
-
-            </div>
-          </td>
-
-        </tr>
-      </tbody>
-
-    </table>
-
-  </div>
+  </main>
 </div>

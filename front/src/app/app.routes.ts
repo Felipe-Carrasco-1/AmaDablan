@@ -19,7 +19,7 @@ import { ProductosPublic } from './public/productos-public/productos-public';
 import { CarritoComponent } from './public/carrito/carrito.component';
 import { CheckoutComponent } from './public/checkout/checkout.component';
 
-import { authGuard } from './core/guards/auth.guard';
+import { authGuard, adminGuard, cajeroGuard, stockGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
 
@@ -31,11 +31,12 @@ export const routes: Routes = [
   { path: 'contacto', component: Contacto },
   { path: 'nuestro-grano', component: NuestroGranoComponent },
 
-  // 🔐 LOGIN
+  // 🔐 LOGIN Y PANELES
   { path: 'login', component: LoginComponent },
   { path: 'forgot-password', component: ForgotPasswordComponent },
   { path: 'reset-password', component: ResetPasswordComponent },
-  { path: 'pos', component: PosComponent, canActivate: [authGuard] },
+  { path: 'pos', component: PosComponent, canActivate: [cajeroGuard] },
+  { path: 'stock', component: AdminInventario, canActivate: [authGuard] }, // Accesible por Admin y Stock
 
   // 🔐 ADMIN
   {
@@ -44,11 +45,10 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'dashboard', component: AdminDashboard },
-      { path: 'productos', component: AdminProductos },
-      { path: 'categorias', component: AdminCategorias },
-      { path: 'inventario', component: AdminInventario },
-      { path: 'reportes', component: AdminReportes },
+      { path: 'dashboard', component: AdminDashboard, canActivate: [adminGuard] },
+      { path: 'productos', component: AdminProductos, canActivate: [adminGuard] },
+      { path: 'categorias', component: AdminCategorias, canActivate: [adminGuard] },
+      { path: 'reportes', component: AdminReportes, canActivate: [adminGuard] },
     ]
   },
 

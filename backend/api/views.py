@@ -7,13 +7,13 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import viewsets
 from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .models import (
     Usuario, Categoria, Producto,
-    Inventario, Reporte, AlertaStock, Pedido, DetallePedido
+    Inventario, Reporte, AlertaStock, Pedido, DetallePedido, Sucursal, Caja, MovimientoStock
 )
 
 from .serializers import (
@@ -25,7 +25,11 @@ from .serializers import (
     InventarioSerializer,
     AlertaStockSerializer,
     ReporteSerializer,
-    PedidoSerializer
+    PedidoSerializer,
+    DetallePedidoSerializer,
+    SucursalSerializer,
+    CajaSerializer,
+    MovimientoStockSerializer
 )
 
 from .permissions import IsAdminUser, IsAdminOrReadOnly
@@ -79,6 +83,53 @@ class CategoriaViewSet(viewsets.ModelViewSet):
     serializer_class = CategoriaSerializer
     permission_classes = [IsAdminOrReadOnly]
 
+# =========================
+# SUCURSALES Y CAJAS
+# =========================
+class SucursalViewSet(viewsets.ModelViewSet):
+    queryset = Sucursal.objects.all()
+    serializer_class = SucursalSerializer
+    permission_classes = [IsAdminOrReadOnly]
+
+class CajaViewSet(viewsets.ModelViewSet):
+    queryset = Caja.objects.all().order_by('-fecha_apertura')
+    serializer_class = CajaSerializer
+    permission_classes = [AllowAny] # Permiso manejado en vista/frontend por ahora
+
+    @action(detail=False, methods=['post'])
+    def abrir(self, request):
+        usuario = request.user
+        if not usuario.is_authenticated or not usuario.sucursal:
+            return Response({'error': 'Usuario no tiene sucursal asignada o no autenticado'}, status=400)
+        
+        caja_abierta = Caja.objects.filter(sucursal=usuario.sucursal, estado='abierta').first()
+        if caja_abierta:
+            return Response({'error': 'Ya existe una caja abierta en esta sucursal'}, status=400)
+
+        monto_inicial = request.data.get('monto_inicial', 0)
+        caja = Caja.objects.create(
+            sucursal=usuario.sucursal,
+            usuario=usuario,
+            monto_inicial=monto_inicial,
+            estado='abierta'
+        )
+        return Response(CajaSerializer(caja).data, status=201)
+
+    @action(detail=True, methods=['post'])
+    def cerrar(self, request, pk=None):
+        caja = self.get_object()
+        if caja.estado == 'cerrada':
+            return Response({'error': 'La caja ya está cerrada'}, status=400)
+            
+        monto_final = request.data.get('monto_final')
+        from django.utils import timezone
+        caja.estado = 'cerrada'
+        caja.fecha_cierre = timezone.now()
+        if monto_final is not None:
+            caja.monto_final = monto_final
+        caja.save()
+        return Response(CajaSerializer(caja).data)
+
 
 # =========================
 # PRODUCTOS
@@ -112,17 +163,20 @@ class ProductoViewSet(viewsets.ModelViewSet):
     def actualizar_stock(self, request, pk=None):
         producto = self.get_object()
         cantidad = int(request.data.get('cantidad', 0))
+        sucursal_id = request.data.get('sucursal_id')
+        
+        if not sucursal_id:
+             if request.user.is_authenticated and request.user.sucursal:
+                 sucursal_id = request.user.sucursal.id
+             else:
+                 return Response({'error': 'Debe especificar sucursal_id'}, status=400)
 
-        producto.stock += cantidad
-
-        if producto.stock < 0:
-            producto.stock = 0
-
-        producto.save()
+        inv, _ = Inventario.objects.get_or_create(producto=producto, sucursal_id=sucursal_id)
+        inv.actualizar_stock(cantidad)
 
         return Response({
             "mensaje": "Stock actualizado",
-            "stock": producto.stock
+            "stock": inv.stock
         })
 
 
@@ -136,22 +190,37 @@ class InventarioViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'])
     def alertas_activas(self, request):
+        queryset = AlertaStock.objects.filter(leida=False)
+        if request.user.is_authenticated and request.user.rol == 'encargado_stock' and request.user.sucursal:
+            queryset = queryset.filter(sucursal=request.user.sucursal)
 
-        alertas = AlertaStock.objects.filter(leida=False)
-
-        data = [
-            {
-                "id": a.id,
-                "producto": a.producto.nombre,
-                "stock": a.producto.stock,
-                "stock_minimo": a.producto.inventario.stock_minimo,
-                "leida": a.leida
-            }
-            for a in alertas
-        ]
+        data = []
+        for a in queryset:
+            inv = Inventario.objects.filter(producto=a.producto, sucursal=a.sucursal).first()
+            if inv:
+                data.append({
+                    "id": a.id,
+                    "producto": a.producto.nombre,
+                    "sucursal": a.sucursal.nombre if a.sucursal else 'Global',
+                    "stock": inv.stock,
+                    "stock_minimo": inv.stock_minimo,
+                    "leida": a.leida
+                })
 
         return Response(data)
 
+
+class MovimientoStockViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = MovimientoStock.objects.select_related('producto', 'sucursal', 'usuario')
+    serializer_class = MovimientoStockSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.rol in ['cajero', 'encargado_stock'] and user.sucursal:
+            qs = qs.filter(sucursal=user.sucursal)
+        return qs
 
 # =========================
 # ALERTAS
@@ -159,7 +228,14 @@ class InventarioViewSet(viewsets.ModelViewSet):
 class AlertaStockViewSet(viewsets.ModelViewSet):
     queryset = AlertaStock.objects.all()
     serializer_class = AlertaStockSerializer
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.rol in ['cajero', 'encargado_stock'] and user.sucursal:
+            qs = qs.filter(sucursal=user.sucursal)
+        return qs
 
     @action(detail=True, methods=['patch'])
     def marcar_leida(self, request, pk=None):
@@ -190,16 +266,19 @@ class ReporteViewSet(viewsets.ModelViewSet):
     def dashboard(self, request):
         from django.utils import timezone
 
-        inventarios = Inventario.objects.select_related('producto')
+        inventarios = Inventario.objects.select_related('producto', 'sucursal')
+        if request.user.is_authenticated and request.user.rol in ['cajero', 'encargado_stock'] and request.user.sucursal:
+            inventarios = inventarios.filter(sucursal=request.user.sucursal)
 
         productos_bajo_stock = [
             {
                 "nombre": inv.producto.nombre,
-                "stock": inv.producto.stock,
+                "sucursal": inv.sucursal.nombre if inv.sucursal else "Global",
+                "stock": inv.stock,
                 "minimo": inv.stock_minimo
             }
             for inv in inventarios
-            if inv.producto.stock <= inv.stock_minimo
+            if inv.stock <= inv.stock_minimo
         ]
 
         # Finanzas del día (Excluye cancelados)
@@ -209,34 +288,29 @@ class ReporteViewSet(viewsets.ModelViewSet):
         fin_dia = timezone.make_aware(datetime.combine(hoy, time.max))
         
         pedidos_hoy = Pedido.objects.filter(fecha__range=(inicio_dia, fin_dia))
-        
-        # Ganancias: Solo los entregados (Ventas reales)
+        if request.user.is_authenticated and request.user.rol in ['cajero', 'encargado_stock'] and request.user.sucursal:
+            pedidos_hoy = pedidos_hoy.filter(sucursal=request.user.sucursal)
+            
         ganancias_hoy = sum(p.total for p in pedidos_hoy if p.estado == 'entregado')
-        
-        # Pedidos Hoy: Todos los que no están cancelados (Flujo de trabajo)
         total_pedidos_hoy = pedidos_hoy.exclude(estado='cancelado').count()
-        
-        # Ticket promedio: Basado en ventas entregadas
         pedidos_entregados_count = pedidos_hoy.filter(estado='entregado').count()
         ticket_promedio = ganancias_hoy / pedidos_entregados_count if pedidos_entregados_count > 0 else 0
+
+        productos_sin_stock = inventarios.filter(stock=0).count()
 
         return Response({
             "total_productos": Producto.objects.count(),
             "total_categorias": Categoria.objects.count(),
             "total_usuarios": Usuario.objects.count(),
-
+            "sucursales_activas": Sucursal.objects.filter(estado=True).count(),
             "alertas_no_leidas": len(productos_bajo_stock),
-
-            "productos_sin_stock": Producto.objects.filter(stock=0).count(),
-
+            "productos_sin_stock": productos_sin_stock,
+            "cajas_activas": list(Caja.objects.filter(estado='abierta').values('id', 'sucursal__nombre', 'usuario__email', 'fecha_apertura', 'monto_inicial')) if request.user.rol == 'admin' else [],
             "productos_por_categoria": list(
                 Categoria.objects.annotate(total=Count('productos'))
                 .values('nombre', 'total')
             ),
-
             "productos_bajo_stock": productos_bajo_stock,
-
-            # Nuevas métricas financieras
             "ganancias_hoy": ganancias_hoy,
             "total_pedidos_hoy": total_pedidos_hoy,
             "ticket_promedio": ticket_promedio
@@ -255,11 +329,11 @@ class ReporteViewSet(viewsets.ModelViewSet):
         if tipo == 'productos':
             datos['items'] = [
                 {
-                    "nombre": p["nombre"],
-                    "precio": float(p["precio"]),
-                    "stock": p["stock"]
+                    "nombre": p.nombre,
+                    "precio": float(p.precio),
+                    "stock_total": sum(inv.stock for inv in p.inventarios.all())
                 }
-                for p in Producto.objects.values('nombre', 'precio', 'stock')
+                for p in Producto.objects.prefetch_related('inventarios').all()
             ]
 
         elif tipo == 'categorias':
@@ -269,13 +343,18 @@ class ReporteViewSet(viewsets.ModelViewSet):
             )
 
         elif tipo in ['stock', 'inventario']:
+            inventarios = Inventario.objects.select_related('producto', 'sucursal')
+            if request.user.is_authenticated and request.user.rol in ['cajero', 'encargado_stock'] and request.user.sucursal:
+                inventarios = inventarios.filter(sucursal=request.user.sucursal)
+                
             datos['items'] = [
                 {
                     "producto": inv.producto.nombre,
-                    "stock": inv.producto.stock,
+                    "sucursal": inv.sucursal.nombre,
+                    "stock": inv.stock,
                     "stock_minimo": inv.stock_minimo
                 }
-                for inv in Inventario.objects.select_related('producto')
+                for inv in inventarios
             ]
 
         else:

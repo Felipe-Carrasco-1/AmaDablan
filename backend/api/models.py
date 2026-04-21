@@ -3,7 +3,24 @@ api/models.py — Ama Dablam Coffee (FINAL PRO)
 """
 
 from django.db import models
+from django.conf import settings
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+
+
+# ─────────────────────────────────────────────
+# SUCURSAL
+# ─────────────────────────────────────────────
+class Sucursal(models.Model):
+    nombre = models.CharField(max_length=100)
+    direccion = models.CharField(max_length=255, blank=True, null=True)
+    telefono = models.CharField(max_length=20, blank=True, null=True)
+    estado = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.nombre
+
+    class Meta:
+        db_table = 'Sucursal'
 
 
 # ─────────────────────────────────────────────
@@ -33,12 +50,14 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     ROL_CHOICES = [
         ('admin', 'Administrador'),
         ('cajero', 'Cajero'),
+        ('encargado_stock', 'Encargado de Stock'),
         ('cliente', 'Cliente')
     ]
 
     email = models.EmailField(unique=True)
-    rol = models.CharField(max_length=10, choices=ROL_CHOICES, default='cliente')
+    rol = models.CharField(max_length=20, choices=ROL_CHOICES, default='cliente')
     estado = models.BooleanField(default=True)
+    sucursal = models.ForeignKey(Sucursal, on_delete=models.SET_NULL, null=True, blank=True, related_name='usuarios')
 
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -74,6 +93,26 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
 
 
 # ─────────────────────────────────────────────
+# CAJA
+# ─────────────────────────────────────────────
+class Caja(models.Model):
+    sucursal = models.ForeignKey(Sucursal, on_delete=models.CASCADE, related_name='cajas')
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='cajas_abiertas')
+    fecha_apertura = models.DateTimeField(auto_now_add=True)
+    fecha_cierre = models.DateTimeField(null=True, blank=True)
+    monto_inicial = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    monto_final = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    estado = models.CharField(max_length=20, choices=[('abierta', 'Abierta'), ('cerrada', 'Cerrada')], default='abierta')
+
+    def __str__(self):
+        return f"Caja {self.id} - {self.sucursal.nombre} ({self.estado})"
+
+    class Meta:
+        db_table = 'Caja'
+        ordering = ['-fecha_apertura']
+
+
+# ─────────────────────────────────────────────
 # CATEGORÍA
 # ─────────────────────────────────────────────
 class Categoria(models.Model):
@@ -93,7 +132,6 @@ class Categoria(models.Model):
 class Producto(models.Model):
     nombre = models.CharField(max_length=100)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
-    stock = models.IntegerField(default=0)
     estado = models.BooleanField(default=True)
     destacado = models.BooleanField(default=False)
 
@@ -110,66 +148,93 @@ class Producto(models.Model):
     def __str__(self):
         return self.nombre
 
-    # 🔥 MÉTODO CENTRALIZADO
-    def verificar_stock_minimo(self):
-        try:
-            inventario = self.inventario
-
-            if self.stock <= inventario.stock_minimo:
-
-                existe = AlertaStock.objects.filter(
-                    producto=self,
-                    leida=False
-                ).exists()
-
-                if not existe:
-                    AlertaStock.objects.create(
-                        producto=self,
-                        mensaje=f'Stock bajo en {self.nombre}: {self.stock} unidades (mínimo: {inventario.stock_minimo})'
-                    )
-                return True
-
-        except Inventario.DoesNotExist:
-            pass
-
-        return False
-
-    # 🔥 OPCIONAL PRO (AUTO)
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        self.verificar_stock_minimo()
+    class Meta:
+        db_table = 'Producto'
 
 
 # ─────────────────────────────────────────────
 # INVENTARIO
 # ─────────────────────────────────────────────
 class Inventario(models.Model):
-    stock_minimo = models.IntegerField()
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='inventarios')
+    sucursal = models.ForeignKey(Sucursal, on_delete=models.CASCADE, related_name='inventarios', null=True, blank=True)
+    stock = models.IntegerField(default=0)
+    stock_minimo = models.IntegerField(default=0)
 
-    producto = models.OneToOneField(
-        Producto,
-        on_delete=models.CASCADE,
-        related_name='inventario'
-    )
+    class Meta:
+        db_table = 'Inventario'
+        unique_together = ('producto', 'sucursal')
 
     def __str__(self):
-        return f'Inventario - {self.producto.nombre}'
+        return f'Inventario - {self.producto.nombre} - {self.sucursal.nombre}'
 
-    def actualizar_stock(self, cantidad):
+    def verificar_stock_minimo(self):
+        if self.stock <= self.stock_minimo:
+            existe = AlertaStock.objects.filter(
+                producto=self.producto,
+                sucursal=self.sucursal,
+                leida=False
+            ).exists()
+
+            if not existe:
+                AlertaStock.objects.create(
+                    producto=self.producto,
+                    sucursal=self.sucursal,
+                    mensaje=f'Stock bajo en {self.producto.nombre} ({self.sucursal.nombre}): {self.stock} unidades (mínimo: {self.stock_minimo})'
+                )
+            return True
+        return False
+
+    def actualizar_stock(self, cantidad, motivo="Ajuste", usuario=None):
         if cantidad == 0:
             return
 
-        nuevo_stock = self.producto.stock + cantidad
-
+        stock_antes = self.stock
+        nuevo_stock = self.stock + cantidad
         if nuevo_stock < 0:
             nuevo_stock = 0
 
-        self.producto.stock = nuevo_stock
-        self.producto.save()
+        self.stock = nuevo_stock
+        self.save()
+        
+        # Registrar el movimiento
+        tipo = 'ENTRADA' if cantidad > 0 else 'SALIDA'
+        MovimientoStock.objects.create(
+            producto=self.producto,
+            sucursal=self.sucursal,
+            tipo=tipo,
+            cantidad=cantidad,
+            stock_antes=stock_antes,
+            stock_despues=self.stock,
+            motivo=motivo,
+            usuario=usuario
+        )
 
-        # 🔥 SOLO LLAMA AL MÉTODO CENTRAL
-        self.producto.verificar_stock_minimo()
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.verificar_stock_minimo()
 
+class MovimientoStock(models.Model):
+    TIPO_CHOICES = [
+        ('ENTRADA', 'Entrada'),
+        ('SALIDA', 'Salida'),
+    ]
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='movimientos')
+    sucursal = models.ForeignKey(Sucursal, on_delete=models.CASCADE, related_name='movimientos', null=True, blank=True)
+    tipo = models.CharField(max_length=10, choices=TIPO_CHOICES)
+    cantidad = models.IntegerField()
+    stock_antes = models.IntegerField()
+    stock_despues = models.IntegerField()
+    motivo = models.CharField(max_length=255, default='Ajuste manual')
+    usuario = models.ForeignKey('Usuario', on_delete=models.SET_NULL, null=True, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'MovimientoStock'
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"{self.tipo} {self.cantidad} - {self.producto.nombre}"
 
 # ─────────────────────────────────────────────
 # REPORTE
@@ -216,6 +281,12 @@ class AlertaStock(models.Model):
         on_delete=models.CASCADE,
         related_name='alertas'
     )
+    sucursal = models.ForeignKey(
+        Sucursal,
+        on_delete=models.CASCADE,
+        related_name='alertas',
+        null=True, blank=True
+    )
 
     def __str__(self):
         return self.mensaje
@@ -251,15 +322,8 @@ class Pedido(models.Model):
         choices=[('transferencia', 'Transferencia Bancaria'), ('efectivo', 'Efectivo/Presencial')], 
         default='transferencia'
     )
-    sucursal = models.CharField(
-        max_length=50,
-        choices=[
-            ('linares_catedral', 'Linares Catedral'),
-            ('linares_hospital', 'Linares Hospital'),
-            ('talca', 'Sucursal Talca')
-        ],
-        default='linares_catedral'
-    )
+    sucursal = models.ForeignKey(Sucursal, on_delete=models.SET_NULL, null=True, related_name='pedidos')
+    caja = models.ForeignKey('Caja', on_delete=models.SET_NULL, null=True, blank=True, related_name='pedidos')
     nombre_cliente = models.CharField(max_length=100, blank=True, null=True)
     telefono_cliente = models.CharField(max_length=20, blank=True, null=True)
     correo_cliente = models.EmailField(blank=True, null=True)

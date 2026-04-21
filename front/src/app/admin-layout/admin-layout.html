@@ -9,19 +9,19 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item">
+      <a routerLink="/admin/dashboard" routerLinkActive="active" class="nav-item" *ngIf="auth.isAdmin">
         <span class="icon">📊</span> Dashboard
       </a>
-      <a routerLink="/admin/productos" routerLinkActive="active" class="nav-item">
+      <a routerLink="/admin/productos" routerLinkActive="active" class="nav-item" *ngIf="auth.isAdmin">
         <span class="icon">☕</span> Productos
       </a>
-      <a routerLink="/admin/categorias" routerLinkActive="active" class="nav-item">
+      <a routerLink="/admin/categorias" routerLinkActive="active" class="nav-item" *ngIf="auth.isAdmin">
         <span class="icon">🗂️</span> Categorías
       </a>
-      <a routerLink="/admin/inventario" routerLinkActive="active" class="nav-item">
+      <a routerLink="/stock" class="nav-item" *ngIf="auth.isAdmin || auth.isEncargadoStock">
         <span class="icon">📦</span> Inventario
       </a>
-      <a routerLink="/admin/reportes" routerLinkActive="active" class="nav-item">
+      <a routerLink="/admin/reportes" routerLinkActive="active" class="nav-item" *ngIf="auth.isAdmin">
         <span class="icon">📋</span> Reportes
       </a>
     </nav>

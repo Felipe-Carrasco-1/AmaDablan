@@ -9,40 +9,43 @@
 
   <!-- KPI Cards -->
   <div class="kpi-grid" *ngIf="dashboard">
-    <div class="kpi-card" style="background: linear-gradient(135deg, #16a34a, #15803d); color: white; border: none;">
-      <div class="kpi-icon" style="background: rgba(255,255,255,0.2);">💰</div>
-      <div class="kpi-info">
-        <span class="kpi-value" style="color: white;">{{ dashboard.ganancias_hoy | currency:'CLP':'symbol-narrow':'1.0-0' }}</span>
-        <span class="kpi-label" style="color: #e2e8f0;">Ganancias de Hoy</span>
+    <div class="kpi-card" style="text-align: center; padding: 25px;">
+      <div class="kpi-icon" style="color: #64748b; font-size: 2rem; margin-bottom: 10px;">🏪</div>
+      <div class="kpi-info" style="display: block;">
+        <span class="kpi-value" style="font-size: 2rem; font-weight: 800; color: #1e293b; display: block;">{{ dashboard.sucursales_activas || 0 }}</span>
+        <span class="kpi-label" style="color: #94a3b8; font-size: 0.85rem; font-weight: 600;">Sucursales activas</span>
       </div>
     </div>
 
-    <div class="kpi-card">
-      <div class="kpi-icon">☕</div>
-      <div class="kpi-info">
-        <span class="kpi-value">{{ dashboard.total_pedidos_hoy }}</span>
-        <span class="kpi-label">Pedidos Hoy</span>
+    <div class="kpi-card" style="text-align: center; padding: 25px;">
+      <div class="kpi-icon" style="color: #0284c7; font-size: 2rem; margin-bottom: 10px;">📦</div>
+      <div class="kpi-info" style="display: block;">
+        <span class="kpi-value" style="font-size: 2rem; font-weight: 800; color: #1e293b; display: block;">{{ dashboard.total_productos || 0 }}</span>
+        <span class="kpi-label" style="color: #94a3b8; font-size: 0.85rem; font-weight: 600;">Productos</span>
       </div>
     </div>
 
-    <div class="kpi-card">
-      <div class="kpi-icon">📈</div>
-      <div class="kpi-info">
-        <span class="kpi-value">{{ dashboard.ticket_promedio | currency:'CLP':'symbol-narrow':'1.0-0' }}</span>
-        <span class="kpi-label">Ticket Promedio</span>
+    <div class="kpi-card" style="text-align: center; padding: 25px;">
+      <div class="kpi-icon" style="color: #16a34a; font-size: 2rem; margin-bottom: 10px;">🧾</div>
+      <div class="kpi-info" style="display: block;">
+        <span class="kpi-value" style="font-size: 2rem; font-weight: 800; color: #1e293b; display: block;">{{ dashboard.total_pedidos_hoy || 0 }}</span>
+        <span class="kpi-label" style="color: #94a3b8; font-size: 0.85rem; font-weight: 600;">Ventas hoy</span>
       </div>
     </div>
 
-    <div
-      class="kpi-card kpi-alert"
-      [class.has-alerts]="dashboard.alertas_no_leidas > 0"
-    >
-      <div class="kpi-icon">🔔</div>
-      <div class="kpi-info">
-        <span class="kpi-value">{{ dashboard.alertas_no_leidas }}</span>
-        <span class="kpi-label">Alertas de stock</span>
+    <div class="kpi-card" style="text-align: center; padding: 25px;">
+      <div class="kpi-icon" style="color: #ea580c; font-size: 2rem; margin-bottom: 10px;">⚠️</div>
+      <div class="kpi-info" style="display: block;">
+        <span class="kpi-value" style="font-size: 2rem; font-weight: 800; color: #1e293b; display: block;">{{ dashboard.alertas_no_leidas || 0 }}</span>
+        <span class="kpi-label" style="color: #94a3b8; font-size: 0.85rem; font-weight: 600;">Alertas de stock</span>
       </div>
     </div>
+  </div>
+
+  <!-- ALERT BANNER -->
+  <div *ngIf="dashboard && dashboard.alertas_no_leidas > 0" style="background: #fff7ed; border-left: 4px solid #ea580c; padding: 15px 20px; border-radius: 8px; margin-bottom: 30px; display: flex; align-items: center; color: #ea580c; font-weight: 600;">
+    🔔 Hay {{ dashboard.alertas_no_leidas }} productos con stock bajo o agotado. 
+    <a routerLink="/admin/inventario" style="color: #ea580c; text-decoration: underline; margin-left: 10px; cursor: pointer;">Ver inventario →</a>
   </div>
 
   <!-- GRID PRINCIPAL -->
@@ -106,27 +109,41 @@
       </div>
     </div>
 
-    <!-- Accesos rápidos -->
-    <div class="card">
-      <h3 class="card-title">Accesos rápidos</h3>
-
-      <div class="quick-actions">
-        <a routerLink="/admin/productos" class="quick-btn">
-          <span>☕</span> Gestionar Productos
-        </a>
-
-        <a routerLink="/admin/categorias" class="quick-btn">
-          <span>🗂️</span> Gestionar Categorías
-        </a>
-
-        <a routerLink="/admin/inventario" class="quick-btn">
-          <span>📦</span> Ver Inventario
-        </a>
-
-        <a routerLink="/admin/reportes" class="quick-btn">
-          <span>📋</span> Generar Reporte
-        </a>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      
+      <!-- Accesos rápidos -->
+      <div class="card" style="grid-column: span 1;">
+        <h3 class="card-title">Accesos rápidos</h3>
+        <div class="quick-actions" style="display: flex; flex-direction: column; gap: 10px;">
+          <a routerLink="/admin/productos" class="quick-btn" style="text-align: center; padding: 15px; border: 1px solid #e2e8f0; background: white; border-radius: 8px; color: #1e293b; font-weight: 600; text-decoration: none; width: 100%;">
+            <span style="color: #6366f1; margin-right: 8px;">➕</span> Agregar producto
+          </a>
+          <a class="quick-btn" style="text-align: center; padding: 15px; border: 1px solid #e2e8f0; background: white; border-radius: 8px; color: #1e293b; font-weight: 600; text-decoration: none; width: 100%; cursor: pointer;">
+            <span style="color: #4f46e5; margin-right: 8px;">👤</span> Gestionar usuarios
+          </a>
+          <a routerLink="/admin/reportes" class="quick-btn" style="text-align: center; padding: 15px; border: 1px solid #e2e8f0; background: white; border-radius: 8px; color: #1e293b; font-weight: 600; text-decoration: none; width: 100%;">
+            <span style="color: #06b6d4; margin-right: 8px;">📊</span> Ver reportes
+          </a>
+          <a class="quick-btn" style="text-align: center; padding: 15px; border: 1px solid #e2e8f0; background: white; border-radius: 8px; color: #1e293b; font-weight: 600; text-decoration: none; width: 100%; cursor: pointer;">
+            <span style="color: #8b5cf6; margin-right: 8px;">💼</span> Estado de cajas
+          </a>
+        </div>
       </div>
+
+      <!-- Cajas activas -->
+      <div class="card" style="grid-column: span 1;">
+        <h3 class="card-title">Cajas activas</h3>
+        <div *ngIf="!dashboard.cajas_activas || dashboard.cajas_activas.length === 0" style="color: #94a3b8; font-size: 0.95rem; margin-top: 10px;">
+          No hay cajas abiertas actualmente.
+        </div>
+        <div *ngIf="dashboard.cajas_activas && dashboard.cajas_activas.length > 0">
+          <div *ngFor="let caja of dashboard.cajas_activas" style="padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px;">
+            <strong>{{ caja.sucursal__nombre }}</strong><br>
+            <span style="color: #64748b; font-size: 0.85rem;">Cajero: {{ caja.usuario__email }} | Apertura: {{ caja.fecha_apertura | date:'shortTime' }}</span>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Pedidos Recientes -->

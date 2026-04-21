@@ -22,6 +22,8 @@ interface Dashboard {
   ganancias_hoy: number;
   total_pedidos_hoy: number;
   ticket_promedio: number;
+  sucursales_activas?: number;
+  cajas_activas?: any[];
 }
 
 const DEFAULT_DASHBOARD: Dashboard = {

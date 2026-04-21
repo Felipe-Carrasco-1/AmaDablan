@@ -67,8 +67,8 @@ export class ApiService {
     return this.http.patch(`${this.baseUrl}/productos/${id}/toggle_destacado/`, {});
   }
 
-  actualizarStock(id: number, cantidad: number) {
-    return this.http.patch(`${this.baseUrl}/productos/${id}/actualizar_stock/`, { cantidad });
+  actualizarStock(id: number, cantidad: number, sucursal_id?: number, motivo: string = "Ajuste") {
+    return this.http.patch(`${this.baseUrl}/productos/${id}/actualizar_stock/`, { cantidad, sucursal_id, motivo });
   }
 
   // =========================
@@ -88,6 +88,14 @@ export class ApiService {
 
   getInventario() {
     return this.http.get(`${this.baseUrl}/inventario/`);
+  }
+
+  getMovimientos() {
+    return this.http.get<any[]>(`${this.baseUrl}/movimientos/`);
+  }
+
+  getAlertas() {
+    return this.http.get<any[]>(`${this.baseUrl}/alertas/`);
   }
 
   // =========================
@@ -144,6 +152,7 @@ export interface Dashboard {
   total_productos: number;
   total_categorias: number;
   total_usuarios: number;
+  sucursales_activas?: number;
   alertas_no_leidas: number;
   productos_sin_stock: number;
   productos_destacados: number;
@@ -152,6 +161,7 @@ export interface Dashboard {
   ganancias_hoy: number;
   total_pedidos_hoy: number;
   ticket_promedio: number;
+  cajas_activas?: any[];
 }
 
 export interface AlertaStock {
